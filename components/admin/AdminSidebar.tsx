@@ -48,7 +48,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, setIsMobileOp
 
   const handleLogout = () => {
     localStorage.clear();
-    router.push("/login");
+    router.push("/adminlogin");
   };
 
   const SidebarContent = () => (

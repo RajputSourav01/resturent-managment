@@ -153,13 +153,7 @@ const AllFoodsList: React.FC = () => {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(food.id)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 text-sm font-medium transition-colors"
-                    >
-                      <Pencil size={14} />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
+                   
 
                     <button
                       onClick={() => handleDelete(food.id)}

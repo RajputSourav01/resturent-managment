@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
-// ✅ ShadCN UI
+// ShadCN UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +21,10 @@ type OrderItem = {
   category?: string;
   price: number;
   quantity: number;
+
+  // ⭐ ADDED
+  inactive?: boolean;
+  status?: string;
 };
 
 type OrderData = {
@@ -49,7 +53,12 @@ export default function OrderStatusPage() {
         const tableNo = urlParams.get("table");
         if (!tableNo) return;
 
-        const q = query(collection(db, "orders"), where("tableNo", "==", tableNo), limit(20));
+        const q = query(
+          collection(db, "orders"),
+          where("tableNo", "==", tableNo),
+          limit(50) // ⭐ CHANGED (allow more orders)
+        );
+
         const snap = await getDocs(q);
 
         if (!snap.empty) {
@@ -58,9 +67,22 @@ export default function OrderStatusPage() {
             ...(doc.data() as any),
           }));
 
-          orders.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+          // Sort newest first
+          orders.sort(
+            (a: any, b: any) =>
+              (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+          );
 
-          const items: OrderItem[] = orders.map((o: any) => ({
+          const latest = orders[0]; // newest order
+
+          // ⭐ MARK OLD SERVED ORDERS INACTIVE
+          const processedOrders = orders.map((o: any) => ({
+            ...o,
+            inactive: o.status === "served" && o.id !== latest.id,
+          }));
+
+          // ⭐ MAP ITEMS INCLUDING INACTIVE STATE
+          const items: OrderItem[] = processedOrders.map((o: any) => ({
             title: o.title || o.foodName || "Unknown Food",
             description: o.description || "No description",
             ingredients: o.ingredients || [],
@@ -68,22 +90,25 @@ export default function OrderStatusPage() {
             category: o.category || "",
             price: o.price || 0,
             quantity: o.quantity || 1,
+            inactive: o.inactive, // ⭐ include inactive
+            status: o.status, // ⭐ include status
           }));
 
-          const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-          const latestOrder = orders[0] as any;
+          // ⭐ EXCLUDE INACTIVE FROM TOTAL
+          const totalAmount = items
+            .filter((i) => !i.inactive)
+            .reduce((sum, item) => sum + item.price * item.quantity, 0);
 
           setOrder({
             tableNo,
             items,
             totalAmount,
-            status: latestOrder.status || "pending",
-            orderTime: latestOrder.createdAt
-              ? new Date(latestOrder.createdAt.seconds * 1000).toLocaleString()
+            status: latest.status || "pending",
+            orderTime: latest.createdAt
+              ? new Date(latest.createdAt.seconds * 1000).toLocaleString()
               : new Date().toLocaleString(),
-            orderId: latestOrder.id || `ORD-${Date.now()}`,
-            createdAt: latestOrder.createdAt,
+            orderId: latest.id,
+            createdAt: latest.createdAt,
           });
         }
       } catch (err) {
@@ -115,55 +140,6 @@ export default function OrderStatusPage() {
 
   const router = useRouter();
 
-
-  const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
-
-const handlePayment = async () => {
-  const res = await loadRazorpayScript();
-
-  if (!res) {
-    alert("Razorpay SDK failed to load. Check your internet connection.");
-    return;
-  }
-
-  const amount = Number(order.totalAmount) * 100; // Razorpay needs paise
-
-  const options = {
-    key: "rzp_test_1234567890", // ⚠️ DEMO KEY (Replace later)
-    amount: amount,
-    currency: "INR",
-    name: "Golden Fork",
-    description: "Restaurant Order Payment",
-    image: "/logo.png",
-    handler: function (response: any) {
-      alert("Payment Successful ✅");
-
-      console.log("Payment ID:", response.razorpay_payment_id);
-      console.log("Order ID:", response.razorpay_order_id);
-      console.log("Signature:", response.razorpay_signature);
-    },
-    prefill: {
-      name: "Customer",
-      email: "demo@email.com",
-      contact: "9999999999",
-    },
-    theme: {
-      color: "#0f172a",
-    },
-  };
-
-  const paymentObject = new (window as any).Razorpay(options);
-  paymentObject.open();
-};
-
   return (
     <main
       className="min-h-screen flex items-center justify-center p-3 sm:p-6 bg-cover bg-center bg-no-repeat relative overflow-x-hidden"
@@ -172,21 +148,18 @@ const handlePayment = async () => {
           "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')",
       }}
     >
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/50" />
 
-      
-
       <Card className="w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl backdrop-blur-md bg-white/95 relative z-10 overflow-hidden">
-                            <div className="flex justify-start">
-  <button
-    onClick={() => router.back()}
-    className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-lg border bg-white/80 hover:bg-white transition"
-  >
-    ← Back
-  </button>
-</div>
-        {/* Header */}
+        <div className="flex justify-start">
+          <button
+            onClick={() => router.back()}
+            className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-lg border bg-white/80 hover:bg-white transition"
+          >
+            ← Back
+          </button>
+        </div>
+
         <CardHeader className="text-center space-y-2 max-w-full">
           <CardTitle className="text-2xl break-words">Order Status</CardTitle>
           <Badge variant="outline" className="mx-auto break-words">
@@ -198,33 +171,37 @@ const handlePayment = async () => {
         </CardHeader>
 
         <CardContent className="space-y-5 max-w-full overflow-x-hidden">
-
-          {/* Progress */}
           <div className="space-y-2">
             <div className="flex justify-between text-[11px] sm:text-xs text-muted-foreground">
               {ORDER_STATUSES.map((s) => (
-                <span key={s.key} className="truncate">{s.label}</span>
+                <span key={s.key} className="truncate">
+                  {s.label}
+                </span>
               ))}
             </div>
             <Progress value={progressValue} />
           </div>
 
-          {/* Status Badge */}
           <div className="text-center">
             <Badge className="text-sm px-4 py-1 break-words">
-              {ORDER_STATUSES[currentStatusIndex]?.icon} {order.status.toUpperCase()}
+              {ORDER_STATUSES[currentStatusIndex]?.icon}{" "}
+              {order.status.toUpperCase()}
             </Badge>
           </div>
 
           <Separator />
 
-          {/* Order Items */}
+          {/* ORDER ITEMS */}
           <ScrollArea className="h-[260px] sm:h-[320px] pr-2 overflow-x-hidden">
             <div className="space-y-3 max-w-full">
               {order.items.map((item, index) => (
-                <Card key={index} className="p-3 rounded-xl max-w-full overflow-hidden">
+                <Card
+                  key={index}
+                  className={`p-3 rounded-xl max-w-full overflow-hidden ${
+                    item.inactive ? "opacity-50" : ""
+                  }`}
+                >
                   <div className="flex flex-col sm:flex-row gap-3 max-w-full">
-
                     {item.imageUrl && (
                       <img
                         src={item.imageUrl}
@@ -234,8 +211,19 @@ const handlePayment = async () => {
                     )}
 
                     <div className="flex-1 space-y-1 min-w-0 max-w-full break-words">
-                      <p className="font-semibold text-base break-words">
+                      <p
+                        className={`font-semibold text-base break-words ${
+                          item.inactive ? "line-through text-gray-500" : ""
+                        }`}
+                      >
                         {item.title}
+
+                        {/* ⭐ SERVED BADGE */}
+                        {item.inactive && (
+                          <Badge className="ml-2 bg-green-600 text-white">
+                            Served
+                          </Badge>
+                        )}
                       </p>
 
                       {item.category && (
@@ -259,8 +247,13 @@ const handlePayment = async () => {
                         </p>
                       )}
 
-                      <p className="mt-2 font-bold text-primary text-sm break-words">
-                        ₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}
+                      <p
+                        className={`mt-2 font-bold text-primary text-sm break-words ${
+                          item.inactive ? "line-through text-gray-500" : ""
+                        }`}
+                      >
+                        ₹{item.price} × {item.quantity} = ₹
+                        {item.price * item.quantity}
                       </p>
                     </div>
                   </div>
@@ -271,20 +264,15 @@ const handlePayment = async () => {
 
           <Separator />
 
-          {/* Total */}
+          {/* TOTAL */}
           <div className="flex justify-between items-center bg-primary/5 rounded-xl p-4 max-w-full">
-            <span className="font-semibold truncate">Total Amount</span>
+            <span className="font-semibold truncate">Paid Amount</span>
+
+            {/* ⭐ SHOW TOTAL ONLY FOR ACTIVE ORDER */}
             <span className="text-xl font-bold text-primary break-words">
               ₹{order.totalAmount}
             </span>
-            <button
-      onClick={handlePayment}
-      className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition"
-    >
-      Pay Now
-    </button>
           </div>
-
         </CardContent>
       </Card>
     </main>

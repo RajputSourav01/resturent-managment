@@ -11,11 +11,13 @@ import {
   doc,
 } from "firebase/firestore";
 
-// ✅ ShadCN UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+// ⭐ CHANGE — animated check icon
+import { CheckCircle } from "lucide-react"; // <-- ADD
 
 type Order = {
   id: string;
@@ -67,7 +69,7 @@ export default function KitchenDashboard() {
                 >
                   <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 gap-4">
                     <div className="flex flex-col sm:flex-row sm:gap-6 items-start">
-                      <CardTitle className="text-lg font-bold mb-1 sm:mb-0">
+                      <CardTitle className="text-gray-300 font-bold mb-1 sm:mb-0">
                         Table #{o.tableNo}
                       </CardTitle>
                       {o.category && (
@@ -76,25 +78,38 @@ export default function KitchenDashboard() {
                     </div>
 
                     <div className="flex gap-2 sm:gap-3 items-center">
-                      {o.status !== "cooking" && (
-                        <Button
-                          size="sm"
-                          className="bg-yellow-500 text-black hover:bg-yellow-400"
-                          onClick={() => updateStatus(o.id, "cooking")}
-                        >
-                          Cooking
-                        </Button>
-                      )}
-                      {o.status !== "served" && (
-                        <Button
-                          size="sm"
-                          className="bg-green-500 text-black hover:bg-green-400"
-                          onClick={() => updateStatus(o.id, "served")}
-                        >
-                          Served
-                        </Button>
-                      )}
-                    </div>
+
+  {/* ✔ Hide cooking button when served */}
+  {o.status !== "cooking" && o.status !== "served" && (
+    <Button
+      size="sm"
+      className="bg-yellow-500 text-black hover:bg-yellow-400"
+      onClick={() => updateStatus(o.id, "cooking")}
+    >
+      Cooking
+    </Button>
+  )}
+
+  {/* ✔ When served → show only animated tick */}
+  {o.status === "served" ? (
+    <div className="flex items-center">
+      <CheckCircle
+        className="text-green-400 animate-bounce"
+        size={36}
+      />
+    </div>
+  ) : (
+    <Button
+      size="sm"
+      className="bg-green-500 text-black hover:bg-green-400"
+      onClick={() => updateStatus(o.id, "served")}
+    >
+      Served
+    </Button>
+  )}
+
+</div>
+
                   </CardHeader>
 
                   <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border-t border-white/10">
@@ -106,7 +121,9 @@ export default function KitchenDashboard() {
                       />
                     )}
                     <div className="flex-1 flex flex-col gap-1">
-                      <p className="font-semibold text-lg">{o.title}</p>
+                      <p className="font-semibold text-gray-300 underline">
+                        {o.title}
+                      </p>
                       <p className="text-sm text-gray-300">Qty: {o.quantity}</p>
                       <p className="text-sm text-gray-300">Price: ₹{o.price}</p>
                       <p className="text-green-400 font-bold text-lg">

@@ -97,120 +97,160 @@ export default function CartPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-5xl mx-auto">
+  <main
+    className="min-h-screen bg-cover bg-center bg-no-repeat text-white p-3 sm:p-6"
+    style={{
+      backgroundImage:
+        "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')",
+    }}
+  >
+    {/* Overlay */}
+    <div className="absolute inset-0 bg-black/70" />
 
-        {/* Top Bar */}
-        <div className="flex justify-between items-center mb-6">
-          <Button variant="outline" onClick={() => router.back()}>
-            ← Back
-          </Button>
-          <h1 className="text-2xl font-bold">🛒 Your Cart</h1>
+    <div className="relative max-w-5xl mx-auto z-10">
+
+      {/* Top Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center mb-6 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-lg">
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto text-gray-300 border-white/30"
+          onClick={() => router.back()}
+        >
+          ← Back
+        </Button>
+
+        <h1 className="text-xl sm:text-2xl font-bold text-center">
+          🛒 Your Cart
+        </h1>
+      </div>
+
+      {/* Empty State */}
+      {cart.length === 0 ? (
+        <div className="text-center text-gray-300 bg-white/10 rounded-xl p-8 backdrop-blur-lg">
+          Your cart is empty 😔
         </div>
+      ) : (
+        <div className="grid gap-4">
+          {cart.map((item) => (
+            <Card
+              key={item.id}
+              className="bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden"
+            >
+              <CardContent className="flex flex-col sm:flex-row gap-4 p-4 items-center">
 
-        {cart.length === 0 ? (
-          <p className="text-center text-gray-400">Your cart is empty</p>
-        ) : (
-          <div className="grid gap-4">
-            {cart.map((item) => (
-              <Card
-                key={item.id}
-                className="bg-white/10 border-white/20"
-              >
-                <CardContent className="flex flex-col sm:flex-row gap-4 p-4">
+                {/* ✅ Updated image rendering (supports image array) */}
+<img
+  src={
+    Array.isArray(item.imageUrl) && item.imageUrl.length > 0
+      ? item.imageUrl[0]   // ← show first image
+      : item.imageUrl || "https://picsum.photos/200" // fallback
+  }
+  className="w-full sm:w-28 h-40 sm:h-28 object-cover rounded-xl"
+/>
 
-                  <img
-                    src={
-                      item.imageUrl ||
-                      "https://via.placeholder.com/150"
-                    }
-                    className="w-full sm:w-32 h-32 object-cover rounded-lg"
-                  />
 
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      {item.description}
-                    </p>
-                    <p className="text-sm">
-                      Qty: {item.quantity}
-                    </p>
-                    <p className="text-yellow-400 font-bold">
+                <div className="flex-1 w-full space-y-1 text-center sm:text-left">
+                  <h3 className="text-lg font-bold text-white">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-sm text-gray-300 line-clamp-2">
+                    {item.description}
+                  </p>
+
+                  <div className="flex justify-between sm:justify-start gap-4 text-sm mt-2">
+                    <span>Qty: {item.quantity}</span>
+                    <span className="text-yellow-400 font-bold">
                       ₹{item.price * item.quantity}
-                    </p>
+                    </span>
                   </div>
+                </div>
 
-                  <Button
-                    className="bg-red-500 hover:bg-red-400"
-                    onClick={() => removeItem(item.id)}
-                  >
-                    Remove
-                  </Button>
+                <Button
+                  className="bg-red-500 hover:bg-red-400 w-full sm:w-auto mt-2 sm:mt-0"
+                  onClick={() => removeItem(item.id)}
+                >
+                  Remove
+                </Button>
 
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {/* Cart Total */}
-        {cart.length > 0 && (
-          <div className="mt-6 text-right">
+      {/* Cart Total */}
+      {cart.length > 0 && (
+        <div className="mt-6 bg-white/10 backdrop-blur-xl rounded-2xl p-5 border border-white/20 shadow-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-xl font-bold text-green-400">
               Total: ₹{total}
             </p>
 
             <Button
-              className="mt-4 bg-green-500 text-black hover:bg-green-400"
+              className="w-full sm:w-auto bg-green-500 text-black hover:bg-green-400 font-semibold px-10 py-6 text-lg rounded-xl"
               onClick={() => setIsPayOpen(true)}
             >
               Proceed to Billing
             </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
 
-      {/* ✅ PAYMENT CONFIRM POPUP */}
-      <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-        <DialogContent className="bg-white text-black rounded-xl">
-          <DialogHeader>
-            <DialogTitle>Confirm Payment</DialogTitle>
-          </DialogHeader>
+    {/* ✅ PAYMENT POPUP */}
+    <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
+      <DialogContent className="bg-white text-black rounded-2xl p-6">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">
+            Confirm Payment
+          </DialogTitle>
+        </DialogHeader>
 
-          <p className="mt-2">Total Amount: <b>₹{total}</b></p>
-
-          <Button
-            className="w-full bg-green-500 text-black hover:bg-green-400 mt-4"
-            onClick={confirmPayment}
-            disabled={saving}
-          >
-            {saving ? "Processing..." : `Pay Now ₹${total}`}
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* ✅ SUCCESS POPUP */}
-      <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
-        <DialogContent className="bg-white text-black rounded-xl text-center">
-          <DialogHeader>
-            <DialogTitle>✅ Payment Successful</DialogTitle>
-          </DialogHeader>
-
-          <p className="mt-2 text-green-600 font-semibold">
-            Your order has been placed successfully!
+        <div className="text-center mt-4">
+          <p className="text-lg">
+            Total Payable
           </p>
+          <p className="text-3xl font-extrabold text-green-600">
+            ₹{total}
+          </p>
+        </div>
 
-          <Button
-            className="mt-4 bg-black text-white"
-            onClick={closeSuccess}
-          >
-            Track Order
-          </Button>
-        </DialogContent>
-      </Dialog>
+        <Button
+          className="w-full bg-green-500 text-black hover:bg-green-400 mt-6 py-6 text-lg rounded-xl"
+          onClick={confirmPayment}
+          disabled={saving}
+        >
+          {saving ? "Processing..." : `Pay Now ₹${total}`}
+        </Button>
+      </DialogContent>
+    </Dialog>
 
-    </main>
-  );
+    {/* ✅ SUCCESS POPUP */}
+    <Dialog
+      open={isSuccessOpen}
+      onOpenChange={setIsSuccessOpen}
+    >
+      <DialogContent className="bg-white text-black rounded-2xl text-center p-6">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">
+            ✅ Payment Successful
+          </DialogTitle>
+        </DialogHeader>
+
+        <p className="mt-3 text-green-600 font-semibold text-lg">
+          Your order has been placed successfully!
+        </p>
+
+        <Button
+          className="mt-6 bg-black text-white px-10 py-6 text-lg rounded-xl"
+          onClick={closeSuccess}
+        >
+          Track Order
+        </Button>
+      </DialogContent>
+    </Dialog>
+  </main>
+);
+
 }
