@@ -111,9 +111,10 @@ export default function FoodItemsPage() {
   }, [category]);
 
   useEffect(() => {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const cartKey = `cart_table_${tableNo || 'unknown'}`;
+    const cart = JSON.parse(localStorage.getItem(cartKey) || "[]");
     setCartCount(cart.length);
-  }, []);
+  }, [tableNo]);
 
   const handleQtyChange = (id: string, value: number) => {
     setQty((prev) => ({
@@ -164,10 +165,11 @@ export default function FoodItemsPage() {
       quantity,
     };
 
-    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const cartKey = `cart_table_${tableNo || 'unknown'}`;
+    const existingCart = JSON.parse(localStorage.getItem(cartKey) || "[]");
 
     const updatedCart = [...existingCart, cartItem];
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
 
     setCartCount(updatedCart.length);
 

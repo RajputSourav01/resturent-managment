@@ -37,14 +37,16 @@ export default function CartPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("cart") || "[]");
+    const cartKey = `cart_table_${tableNo || 'unknown'}`;
+    const data = JSON.parse(localStorage.getItem(cartKey) || "[]");
     setCart(data);
-  }, []);
+  }, [tableNo]);
 
   const removeItem = (id: string) => {
     const updated = cart.filter((item) => item.id !== id);
     setCart(updated);
-    localStorage.setItem("cart", JSON.stringify(updated));
+    const cartKey = `cart_table_${tableNo || 'unknown'}`;
+    localStorage.setItem(cartKey, JSON.stringify(updated));
   };
 
   const total = cart.reduce(
@@ -76,7 +78,8 @@ export default function CartPage() {
         await addDoc(collection(db, "orders"), orderData);
       }
 
-      localStorage.removeItem("cart");
+      const cartKey = `cart_table_${tableNo || 'unknown'}`;
+      localStorage.removeItem(cartKey);
       setCart([]);
 
       setIsPayOpen(false);

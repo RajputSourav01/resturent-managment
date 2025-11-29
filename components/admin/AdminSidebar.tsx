@@ -95,9 +95,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, setIsMobileOp
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className="w-full justify-start"
+          className="w-full justify-start mb-5"
         >
-          <LogOut className="mr-3 h-5 w-5" />
+          <LogOut className="mr-3 h-5 w-5 " />
           Logout
         </Button>
       </div>

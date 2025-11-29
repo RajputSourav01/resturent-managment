@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 
 type StatsResponse = {
   totalSales: number;
@@ -40,7 +41,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/adminlogin");
+      router.push("/adminlogin");
     }
   }, [user, loading, router]);
 
@@ -123,6 +124,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
+    <AdminProtectedRoute>
     <main className="min-h-screen bg-muted/40">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
         {/* Header */}
@@ -289,5 +291,7 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
     </main>
+    </AdminProtectedRoute>
   );
+  
 }

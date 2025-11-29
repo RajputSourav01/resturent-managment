@@ -23,6 +23,7 @@ const AdminLoginForm: React.FC = () => {
       await signInWithEmailAndPassword(auth, email, password);
 
       // 2. Login successful, navigate to admin dashboard
+      localStorage.setItem("admin", "true");
       router.push('/admin/admindash'); 
 
     } catch (err: any) {
