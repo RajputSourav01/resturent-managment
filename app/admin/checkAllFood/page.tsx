@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
+import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 
 interface FoodItem {
   id: string;
@@ -58,6 +59,7 @@ const AllFoodsList: React.FC = () => {
   };
 
   return (
+    <AdminProtectedRoute>
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="mb-8 text-center">
@@ -180,6 +182,7 @@ const AllFoodsList: React.FC = () => {
         </>
       )}
     </div>
+    </AdminProtectedRoute>
   );
 };
 

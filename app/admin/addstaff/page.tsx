@@ -10,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore';
+import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 
 export default function AddStaffForm() {
   const [fullName, setFullName] = useState('');
@@ -147,6 +148,7 @@ export default function AddStaffForm() {
   };
 
   return (
+    <AdminProtectedRoute>
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* ✅ ADD FORM */}
       <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
@@ -354,5 +356,6 @@ export default function AddStaffForm() {
         </div>
       </div>
     </div>
+    </AdminProtectedRoute>
   );
 }

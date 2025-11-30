@@ -12,6 +12,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { User, Lock, Hash, Pencil, Trash2 } from 'lucide-react';
+import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 
 type TableUser = {
   id: string;
@@ -111,6 +112,7 @@ export default function AddTablePage() {
   };
 
   return (
+    <AdminProtectedRoute>
     <div className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-10 gap-10">
 
       {/* ✅ Form */}
@@ -224,5 +226,6 @@ export default function AddTablePage() {
         </table>
       </div>
     </div>
+    </AdminProtectedRoute>
   );
 }

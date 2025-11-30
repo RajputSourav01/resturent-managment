@@ -11,6 +11,7 @@ import {
   deleteDoc,
   updateDoc,
 } from 'firebase/firestore';
+import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 
 /* ================================
    UPDATED TYPE → imageUrl: string[]
@@ -43,6 +44,9 @@ const AddFoodForm: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [availableCategories, setAvailableCategories] = useState<string[]>(categories);
+
+  const [hasScrolled, setHasScrolled] = useState(false);
+
 
   /* --------------------------- FETCH FOODS --------------------------- */
   useEffect(() => {
@@ -193,6 +197,7 @@ const AddFoodForm: React.FC = () => {
     Object.values(foods).filter((food: any) => food.category === cat).length;
 
   return (
+    <AdminProtectedRoute>
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
 
       {/* --------------------- FORM ---------------------- */}
@@ -344,7 +349,20 @@ const AddFoodForm: React.FC = () => {
           {availableCategories.map((cat) => (
             <div
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => {
+  setSelectedCategory(cat);
+
+  if (!hasScrolled) {
+    setHasScrolled(true);
+
+    setTimeout(() => {
+      window.scrollBy({
+        top: 600,
+        behavior: "smooth",
+      });
+    }, 200);
+  }
+}}
               className={`cursor-pointer p-4 rounded-lg text-center shadow-sm border hover:shadow-md transition-all
                 ${
                   selectedCategory === cat
@@ -370,7 +388,9 @@ const AddFoodForm: React.FC = () => {
               {selectedCategory} Items
             </h2>
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => {setSelectedCategory(null)
+                setHasScrolled(false); // allow scrolling again next time
+              }}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >
               Clear Selection
@@ -446,11 +466,21 @@ const AddFoodForm: React.FC = () => {
 
                       <div className="flex gap-2">
                         <button
-                          onClick={() => startEdit(id, food)}
-                          className="flex-1 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-sm font-medium"
-                        >
-                          Edit
-                        </button>
+                               onClick={() => {
+                                 startEdit(id, food);
+                             
+                                 // 🔥 Scroll to top smoothly
+                                 setTimeout(() => {
+                                   window.scrollTo({
+                                     top: 0,
+                                     behavior: "smooth",
+                                   });
+                                 }, 150); // slight delay so state updates first
+                               }}
+                               className="flex-1 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-sm font-medium"
+                                >
+                               Edit
+                         </button>
 
                         <button
                           onClick={() => deleteFood(id)}
@@ -469,6 +499,7 @@ const AddFoodForm: React.FC = () => {
         </div>
       )}
     </div>
+    </AdminProtectedRoute>
   );
 };
 
