@@ -22,7 +22,6 @@ type OrderItem = {
   price: number;
   quantity: number;
 
-  // ⭐ ADDED
   inactive?: boolean;
   status?: string;
 };
@@ -56,7 +55,7 @@ export default function OrderStatusPage() {
         const q = query(
           collection(db, "orders"),
           where("tableNo", "==", tableNo),
-          limit(50) // ⭐ CHANGED (allow more orders)
+          limit(50)
         );
 
         const snap = await getDocs(q);
@@ -67,22 +66,25 @@ export default function OrderStatusPage() {
             ...(doc.data() as any),
           }));
 
-          // Sort newest first
           orders.sort(
             (a: any, b: any) =>
               (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
           );
 
-          const latest = orders[0]; // newest order
+          const latest = orders[0];
 
-          // ⭐ MARK OLD SERVED ORDERS INACTIVE
           const processedOrders = orders.map((o: any) => ({
             ...o,
             inactive: o.status === "served" && o.id !== latest.id,
           }));
 
-          // ⭐ MAP ITEMS INCLUDING INACTIVE STATE
-          const items: OrderItem[] = processedOrders.map((o: any) => ({
+          // ⭐ REMOVE SERVED ORDERS COMPLETELY
+          const activeOrders = processedOrders.filter(
+            (o: any) => o.status !== "served"
+          );
+
+          // ⭐ MAP ONLY ACTIVE ORDERS
+          const items: OrderItem[] = activeOrders.map((o: any) => ({
             title: o.title || o.foodName || "Unknown Food",
             description: o.description || "No description",
             ingredients: o.ingredients || [],
@@ -90,14 +92,14 @@ export default function OrderStatusPage() {
             category: o.category || "",
             price: o.price || 0,
             quantity: o.quantity || 1,
-            inactive: o.inactive, // ⭐ include inactive
-            status: o.status, // ⭐ include status
+            inactive: false,
+            status: o.status,
           }));
 
-          // ⭐ EXCLUDE INACTIVE FROM TOTAL
-          const totalAmount = items
-            .filter((i) => !i.inactive)
-            .reduce((sum, item) => sum + item.price * item.quantity, 0);
+          const totalAmount = items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+          );
 
           setOrder({
             tableNo,
@@ -191,16 +193,10 @@ export default function OrderStatusPage() {
 
           <Separator />
 
-          {/* ORDER ITEMS */}
           <ScrollArea className="h-[260px] sm:h-[320px] pr-2 overflow-x-hidden">
             <div className="space-y-3 max-w-full">
               {order.items.map((item, index) => (
-                <Card
-                  key={index}
-                  className={`p-3 rounded-xl max-w-full overflow-hidden ${
-                    item.inactive ? "opacity-50" : ""
-                  }`}
-                >
+                <Card key={index} className="p-3 rounded-xl max-w-full">
                   <div className="flex flex-col sm:flex-row gap-3 max-w-full">
                     {item.imageUrl && (
                       <img
@@ -211,19 +207,8 @@ export default function OrderStatusPage() {
                     )}
 
                     <div className="flex-1 space-y-1 min-w-0 max-w-full break-words">
-                      <p
-                        className={`font-semibold text-base break-words ${
-                          item.inactive ? "line-through text-gray-500" : ""
-                        }`}
-                      >
+                      <p className="font-semibold text-base break-words">
                         {item.title}
-
-                        {/* ⭐ SERVED BADGE */}
-                        {item.inactive && (
-                          <Badge className="ml-2 bg-green-600 text-white">
-                            Served
-                          </Badge>
-                        )}
                       </p>
 
                       {item.category && (
@@ -247,11 +232,7 @@ export default function OrderStatusPage() {
                         </p>
                       )}
 
-                      <p
-                        className={`mt-2 font-bold text-primary text-sm break-words ${
-                          item.inactive ? "line-through text-gray-500" : ""
-                        }`}
-                      >
+                      <p className="mt-2 font-bold text-primary text-sm break-words">
                         ₹{item.price} × {item.quantity} = ₹
                         {item.price * item.quantity}
                       </p>
@@ -264,11 +245,8 @@ export default function OrderStatusPage() {
 
           <Separator />
 
-          {/* TOTAL */}
           <div className="flex justify-between items-center bg-primary/5 rounded-xl p-4 max-w-full">
             <span className="font-semibold truncate">Paid Amount</span>
-
-            {/* ⭐ SHOW TOTAL ONLY FOR ACTIVE ORDER */}
             <span className="text-xl font-bold text-primary break-words">
               ₹{order.totalAmount}
             </span>
