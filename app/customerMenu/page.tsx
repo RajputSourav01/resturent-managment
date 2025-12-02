@@ -405,10 +405,10 @@ Price: ₹${selectedFood.price}`
 
   if (dbTableNo === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black via-black/80 to-black text-red-400 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-white text-red-600 p-6">
         <div className="max-w-lg text-center">
           <h2 className="text-2xl font-extrabold">❌ Invalid Table</h2>
-          <p className="mt-2 text-gray-300">Table not found in database.</p>
+          <p className="mt-2 text-black">Table not found in database.</p>
           <button
             onClick={() => router.push("/")}
             className="mt-4 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold"
@@ -436,9 +436,7 @@ Price: ₹${selectedFood.price}`
   });
 
   return (
-    <main className="min-h-screen relative  bg-white text-black">
-      {/* dim overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/60" />
+    <main className="min-h-screen relative bg-white text-black">
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -452,11 +450,11 @@ Price: ₹${selectedFood.price}`
               />
             </div>
             <div>
-              <h1 className="text-white text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-black text-2xl sm:text-3xl font-extrabold tracking-tight">
                 <span className="block">My Restaurant</span>
-                <span className="text-sm text-white/70 font-medium">Digital Menu</span>
+                <span className="text-sm text-black/70 font-medium">Digital Menu</span>
               </h1>
-              <p className="mt-1 text-white/60 text-sm">
+              <p className="mt-1 text-black/60 text-sm">
                 Table: <span className="font-semibold">{dbTableNo}</span>
               </p>
             </div>
@@ -467,7 +465,7 @@ Price: ₹${selectedFood.price}`
               onClick={() =>
                 router.push(`/customerMenu/order-status?table=${dbTableNo}`)
               }
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 text-black font-semibold shadow"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
             >
               Order Status
             </button>
@@ -500,9 +498,9 @@ Price: ₹${selectedFood.price}`
               playsInline
               className="w-full h-52 sm:h-64 md:h-72 object-cover"
             />
-            <div className="p-4 bg-gradient-to-t from-black/40 to-transparent">
-              <h2 className="text-white text-xl sm:text-2xl font-bold">Seasonal Specials</h2>
-              <p className="text-white/70 mt-1 text-sm">Curated just for today — fresh, bold and unforgettable.</p>
+            <div className="p-4 bg-gradient-to-t from-gray-100 to-transparent">
+              <h2 className="text-black text-xl sm:text-2xl font-bold">Seasonal Specials</h2>
+              <p className="text-black/70 mt-1 text-sm">Curated just for today — fresh, bold and unforgettable.</p>
             </div>
           </div>
         </section>
@@ -516,7 +514,7 @@ Price: ₹${selectedFood.price}`
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search dishes, e.g. Pizza, Pasta..."
-                  className="w-full rounded-2xl py-3 px-4 bg-white/90 text-black placeholder:text-black/50 shadow"
+                  className="w-full rounded-2xl py-3 px-4 bg-gray-100 text-black placeholder:text-black/50 shadow"
                 />
                 {search && (
                   <button
@@ -535,7 +533,7 @@ Price: ₹${selectedFood.price}`
                 className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-sm shadow ${
                   activeFilter === "ALL"
                     ? "bg-orange-500 text-black"
-                    : "bg-white/10 text-white"
+                    : "bg-gray-200 text-black"
                 }`}
               >
                 ALL
@@ -548,7 +546,7 @@ Price: ₹${selectedFood.price}`
                   className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-sm shadow ${
                     activeFilter === cat
                       ? "bg-orange-500 text-black"
-                      : "bg-white/10 text-white"
+                      : "bg-gray-200 text-black"
                   }`}
                 >
                   {cat}
@@ -561,9 +559,9 @@ Price: ₹${selectedFood.price}`
         {/* Menu Grid */}
         <section className="mb-8">
           {loading ? (
-            <div className="text-center py-20 text-white/60 animate-pulse">Loading menu...</div>
+            <div className="text-center py-20 text-black/60 animate-pulse">Loading menu...</div>
           ) : filteredFoods.length === 0 ? (
-            <div className="text-center py-20 text-white/60">No food found</div>
+            <div className="text-center py-20 text-black/60">No food found</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredFoods.map((food) => {
@@ -576,7 +574,7 @@ Price: ₹${selectedFood.price}`
                 return (
                   <article
                     key={food.id}
-                    className="bg-white/6 backdrop-blur-md rounded-2xl border border-white/6 overflow-hidden shadow-lg flex flex-col"
+                    className="bg-gray-50 backdrop-blur-md rounded-2xl border border-gray-200 overflow-hidden shadow-lg flex flex-col"
                   >
                     <Card className="bg-transparent shadow-none rounded-none p-0">
                       <CardContent className="p-4 flex flex-col gap-3">
@@ -584,26 +582,26 @@ Price: ₹${selectedFood.price}`
 
                         <div className="flex items-center justify-between mt-2">
                           <div>
-                            <Badge className="bg-white/10 text-white/90 py-1 px-3 rounded-full text-xs">
+                            <Badge className="bg-gray-200 text-black py-1 px-3 rounded-full text-xs">
                               {food.category || "General"}
                             </Badge>
                           </div>
 
                           <div className="text-right">
-                            <div className="text-sm text-white/60">Price</div>
-                            <div className="text-lg font-bold text-orange-400">
+                            <div className="text-sm text-black/60">Price</div>
+                            <div className="text-lg font-bold text-orange-500">
                               ₹{(food.price || 0) * (qty[food.id] || 1)}
                             </div>
                           </div>
                         </div>
 
-                        <h3 className="text-white text-lg font-extrabold leading-snug">
+                        <h3 className="text-black text-lg font-extrabold leading-snug">
                           {food.title || "Untitled"}
                         </h3>
 
-                        <p className="text-white/70 text-sm line-clamp-2">{food.description}</p>
+                        <p className="text-black/70 text-sm line-clamp-2">{food.description}</p>
 
-                        <Separator className="my-2 border-white/6" />
+                        <Separator className="my-2 border-gray-200" />
 
                         <div className="flex items-center justify-between gap-3 mt-auto">
                           <Input
@@ -611,7 +609,7 @@ Price: ₹${selectedFood.price}`
                             min={1}
                             value={qty[food.id] || 1}
                             onChange={(e) => handleQtyChange(food.id, +e.target.value)}
-                            className="w-24 bg-black/40 text-center text-white rounded-lg"
+                            className="w-24 bg-gray-100 text-center text-black rounded-lg"
                           />
 
                           <div className="flex-1 flex gap-2">
@@ -623,7 +621,7 @@ Price: ₹${selectedFood.price}`
                             </Button>
 
                             <Button
-                              className="rounded-xl bg-white/90 px-2 py-1 text-black font-semibold"
+                              className="rounded-xl bg-gray-200 px-2 py-1 text-black font-semibold"
                               onClick={() => addToCart(food)}
                             >
                               Add
@@ -640,7 +638,7 @@ Price: ₹${selectedFood.price}`
         </section>
 
         {/* Footer / Notes */}
-        <footer className="text-center text-white/60 mt-6">
+        <footer className="text-center text-black/60 mt-6">
           <p className="text-sm">Thank you for dining with us — enjoy your meal 🍽️</p>
         </footer>
 
