@@ -451,12 +451,10 @@ Price: ₹${selectedFood.price}`
             </div>
             <div>
               <h1 className="text-black text-2xl sm:text-3xl font-extrabold tracking-tight">
-                <span className="block">My Restaurant</span>
-                <span className="text-sm text-black/70 font-medium">Digital Menu</span>
+                <span className="text-yellow-500 text-4xl font-[cursive]">Golden Fork</span>
+                
               </h1>
-              <p className="mt-1 text-black/60 text-sm">
-                Table: <span className="font-semibold">{dbTableNo}</span>
-              </p>
+              
             </div>
           </div>
 
@@ -558,12 +556,18 @@ Price: ₹${selectedFood.price}`
 
         {/* Menu Grid */}
         <section className="mb-8">
+          <div className="flex justify-center items-center ">
+  <span className="text-sm text-black/70 font-medium mb-4">
+    Digital Menu
+  </span>
+</div>
           {loading ? (
             <div className="text-center py-20 text-black/60 animate-pulse">Loading menu...</div>
           ) : filteredFoods.length === 0 ? (
             <div className="text-center py-20 text-black/60">No food found</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              
               {filteredFoods.map((food) => {
                 const imagesArray = Array.isArray(food.imageUrl)
                   ? (food.imageUrl as string[])
@@ -600,6 +604,7 @@ Price: ₹${selectedFood.price}`
                         </h3>
 
                         <p className="text-black/70 text-sm line-clamp-2">{food.description}</p>
+                         <p className="text-black/70 text-sm line-clamp-2">{food.ingredients}</p>
 
                         <Separator className="my-2 border-gray-200" />
 
