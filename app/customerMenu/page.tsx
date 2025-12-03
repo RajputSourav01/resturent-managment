@@ -59,6 +59,7 @@ export default function DigitalMenu() {
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [expandedCards, setExpandedCards] = useState<{ [key: string]: boolean }>({});
 
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -171,6 +172,27 @@ useEffect(() => {
     setQty((prev) => ({
       ...prev,
       [id]: value < 1 ? 1 : value,
+    }));
+  };
+
+  const incrementQty = (id: string) => {
+    setQty((prev) => ({
+      ...prev,
+      [id]: (prev[id] || 1) + 1,
+    }));
+  };
+
+  const decrementQty = (id: string) => {
+    setQty((prev) => ({
+      ...prev,
+      [id]: Math.max(1, (prev[id] || 1) - 1),
+    }));
+  };
+
+  const toggleReadMore = (id: string) => {
+    setExpandedCards((prev) => ({
+      ...prev,
+      [id]: !prev[id],
     }));
   };
 
@@ -453,13 +475,7 @@ Price: ₹${selectedFood.price}`
       <div className="min-h-screen flex items-center justify-center bg-white text-red-600 p-6">
         <div className="max-w-lg text-center">
           <h2 className="text-2xl font-extrabold">❌ Invalid Table</h2>
-          <p className="mt-2 text-black">Table not found in database.</p>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-4 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold"
-          >
-            Back Home
-          </button>
+          <p className="mt-2 text-black">Please scan the QR which is have on table.</p>
         </div>
       </div>
     );
@@ -482,7 +498,7 @@ Price: ₹${selectedFood.price}`
 
   return (
     <main
-  className="min-h-screen relative"
+  className="min-h-screen relative w-full"
   style={{
     backgroundImage: theme.themeImgUrl
       ? `url(${theme.themeImgUrl})`
@@ -492,26 +508,22 @@ Price: ₹${selectedFood.price}`
     color: theme.colorPicker,
   }}
 >
-
-
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <header className="flex sm:flex-row items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
               <img src={theme.logoUrl} className="w-full h-full object-cover" />
-
             </div>
             <div>
-              <h1 className="text-black text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-black text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
                 <span
-                  className="text-4xl font-[cursive]"
+                  className="text-2xl sm:text-3xl lg:text-4xl font-[cursive]"
                    style={{ color: theme.colorPicker }}
                       >
                      {theme.restaurantName}
                     </span>   
               </h1>
-              
             </div>
           </div>
 
@@ -616,8 +628,8 @@ Price: ₹${selectedFood.price}`
 
         {/* Search + Filters */}
         <section className="mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-            <div className="sm:col-span-2">
+          <div className="flex flex-col gap-3">
+            <div className="w-full">
               <div className="relative">
                 <Input
                   value={search}
@@ -636,10 +648,10 @@ Price: ₹${selectedFood.price}`
               </div>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
               <button
                 onClick={() => setActiveFilter("ALL")}
-                className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-sm shadow ${
+                className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow ${
                   activeFilter === "ALL"
                     ? "bg-orange-500 text-black"
                     : "bg-gray-200 text-black"
@@ -652,7 +664,7 @@ Price: ₹${selectedFood.price}`
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full font-semibold text-sm shadow ${
+                  className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow ${
                     activeFilter === cat
                       ? "bg-orange-500 text-black"
                       : "bg-gray-200 text-black"
@@ -677,7 +689,7 @@ Price: ₹${selectedFood.price}`
           ) : filteredFoods.length === 0 ? (
             <div className="text-center py-20 text-black/60">No food found</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               
               {filteredFoods.map((food) => {
                 const imagesArray = Array.isArray(food.imageUrl)
@@ -686,16 +698,25 @@ Price: ₹${selectedFood.price}`
                   ? [food.imageUrl as string]
                   : ["https://via.placeholder.com/300"];
 
+                const isExpanded = expandedCards[food.id] || false;
+                const description = food.description || "";
+                const ingredients = food.ingredients || "";
+                const showReadMore = description.length > 100 || ingredients;
+
                 return (
                   <article
                     key={food.id}
                     className="bg-gray-50 backdrop-blur-md rounded-2xl border border-gray-200 overflow-hidden shadow-lg flex flex-col"
                   >
-                    <Card className="bg-transparent shadow-none rounded-none p-0">
+                    <Card className="bg-transparent shadow-none rounded-none p-0 flex flex-col">
                       <CardContent className="p-4 flex flex-col gap-3">
-                        <ImageSlider images={imagesArray as string[]} />
+                        {/* Fixed height image container */}
+                        <div className="h-44 flex-shrink-0">
+                          <ImageSlider images={imagesArray as string[]} />
+                        </div>
 
-                        <div className="flex items-center justify-between mt-2">
+                        {/* Price and Category */}
+                        <div className="flex items-center justify-between flex-shrink-0">
                           <div>
                             <Badge className="bg-gray-200 text-black py-1 px-3 rounded-full text-xs">
                               {food.category || "General"}
@@ -710,34 +731,72 @@ Price: ₹${selectedFood.price}`
                           </div>
                         </div>
 
-                        <h3 className="text-black text-lg font-extrabold">
+                        {/* Title */}
+                        <h3 className="text-black text-lg font-extrabold flex-shrink-0">
                           {food.title || "Untitled"}
                         </h3>
 
-                        <p className="text-black/70 text-sm">{food.description}</p>
-                         <p className="text-black/70 text-sm">{food.ingredients}</p>
+                        {/* Description and Ingredients with Read More */}
+                        <div className="flex-grow">
+                          <div className="text-black/70 text-sm">
+                            {description && (
+                              <div className={`mb-2 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                                <strong>Description: </strong>
+                                {description}
+                              </div>
+                            )}
+                            {isExpanded && ingredients && (
+                              <div className="mt-3 whitespace-pre-line">
+                                <strong>Ingredients: </strong>
+                                {ingredients}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {showReadMore && (
+                            <button
+                              onClick={() => toggleReadMore(food.id)}
+                              className="text-orange-500 text-sm font-semibold hover:underline mt-2 block"
+                            >
+                              {isExpanded ? 'see less' : 'see more..'}
+                            </button>
+                          )}
+                        </div>
 
-                        <Separator className="my-2 border-gray-200" />
+                        <Separator className="border-gray-200 mt-3" />
 
-                        <div className="flex items-center justify-between gap-3 mt-auto">
-                          <Input
-                            type="number"
-                            min={1}
-                            value={qty[food.id] || 1}
-                            onChange={(e) => handleQtyChange(food.id, +e.target.value)}
-                            className="w-24 bg-gray-100 text-center text-black rounded-lg"
-                          />
+                        {/* Quantity and Action Buttons */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-3">
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-1 bg-gray-100  rounded-lg p-1 w-full sm:w-auto">
+                            <button
+                              onClick={() => decrementQty(food.id)}
+                              className="w-8 h-8 flex items-center px-2 py-2 justify-center bg-white text-black rounded-md font-bold hover:bg-gray-200 transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="flex-1 sm:w-8 text-center px-2 py-2 text-black font-semibold">
+                              {qty[food.id] || 1}
+                            </span>
+                            <button
+                              onClick={() => incrementQty(food.id)}
+                              className="w-8 h-8 flex items-center justify-center px-2 py-2 bg-white text-black rounded-md font-bold hover:bg-gray-200 transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
 
-                          <div className="flex-1 flex gap-2">
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 w-full sm:flex-1">
                             <Button
-                              className="flex-1 rounded-xl bg-orange-500 text-black px-2 py-1 font-bold"
+                              className="flex-1 rounded-xl bg-orange-500 text-black px-2 py-2 font-bold hover:bg-orange-600 transition-colors text-xs sm:text-sm"
                               onClick={() => handlePayNow(food)}
                             >
-                              Order-Now
+                              Order
                             </Button>
 
                             <Button
-                              className="rounded-xl bg-gray-200 px-2 py-1 text-black font-semibold"
+                              className="rounded-xl bg-gray-200 px-3 py-2 text-black font-semibold hover:bg-gray-300 transition-colors text-xs sm:text-sm"
                               onClick={() => addToCart(food)}
                             >
                               Add
