@@ -740,9 +740,14 @@ Price: ₹${selectedFood.price}`
                         <div className="flex-grow">
                           <div className="text-black/70 text-sm">
                             {description && (
-                              <div className={`mb-2 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                              <div className="mb-2">
                                 <strong>Description: </strong>
-                                {description}
+                                <span className={`${!isExpanded ? 'line-clamp-2' : 'block'}`}>
+                                  {!isExpanded && description.length > 100 
+                                    ? `${description.substring(0, 100)}...` 
+                                    : description
+                                  }
+                                </span>
                               </div>
                             )}
                             {isExpanded && ingredients && (
@@ -763,10 +768,10 @@ Price: ₹${selectedFood.price}`
                           )}
                         </div>
 
-                        <Separator className="border-gray-200 mt-3" />
+                        <Separator className="border-gray-200 " />
 
                         {/* Quantity and Action Buttons */}
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-3">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 ">
                           {/* Quantity Controls */}
                           <div className="flex items-center gap-1 bg-gray-100  rounded-lg p-1 w-full sm:w-auto">
                             <button
