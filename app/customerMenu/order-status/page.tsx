@@ -143,6 +143,7 @@ export default function OrderStatusPage() {
   const router = useRouter();
 
   return (
+    
     <main
       className="min-h-screen flex items-center justify-center p-3 sm:p-6 bg-cover bg-center bg-no-repeat relative overflow-x-hidden"
       style={{
@@ -150,6 +151,19 @@ export default function OrderStatusPage() {
           "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')",
       }}
     >
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
+  <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg mb-2">
+    <img
+      src="/logo.png"
+      alt="Golden Fork Logo"
+      className="w-full h-full object-cover"
+    />
+  </div>
+  <h1 className="text-2xl sm:text-3xl font-[cursive] text-yellow-500 drop-shadow-lg">
+    Golden Fork
+  </h1>
+</div>
+
       <div className="absolute inset-0 bg-black/50" />
 
       <Card className="w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl backdrop-blur-md bg-white/95 relative z-10 overflow-hidden">

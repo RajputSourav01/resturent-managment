@@ -17,6 +17,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 
+import Theme from "../theme/page";
+
+
 type StatsResponse = {
   totalSales: number;
   totalInventory: number;
@@ -263,7 +266,9 @@ export default function AdminDashboardPage() {
             </ScrollArea>
           </CardContent>
         </Card>
-
+          <div>
+            < Theme  />
+          </div>
         {/* Summary */}
         <Card>
           <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 text-center">

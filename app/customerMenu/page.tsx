@@ -61,6 +61,8 @@ export default function DigitalMenu() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   /* ------------------------------------------------------------ */
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
 
   useEffect(() => {
     const fetchDBTable = async () => {
@@ -440,7 +442,7 @@ Price: ₹${selectedFood.price}`
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+        <header className="flex sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
               <img
@@ -459,30 +461,84 @@ Price: ₹${selectedFood.price}`
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                router.push(`/customerMenu/order-status?table=${dbTableNo}`)
-              }
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
-            >
-              Order Status
-            </button>
+  {/* Desktop buttons: visible on md+ */}
+  <div className="hidden md:flex items-center gap-3">
+    <button
+      onClick={() =>
+        router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+      }
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
+    >
+      Order Status
+    </button>
 
-            <button
-              onClick={() =>
-                router.push(`/customerMenu/cart?table=${dbTableNo}`)
-              }
-              className="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold shadow"
-            >
-              <ShoppingCart size={16} />
-              <span>Cart</span>
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-          </div>
+    <button
+      onClick={() =>
+        router.push(`/customerMenu/cart?table=${dbTableNo}`)
+      }
+      className="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold shadow"
+    >
+      <ShoppingCart size={16} />
+      <span>Cart</span>
+      {cartCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+          {cartCount}
+        </span>
+      )}
+    </button>
+  </div>
+
+  {/* Mobile hamburger: visible on mobile only */}
+  <div className="md:hidden relative">
+    <button
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      className="p-2 rounded-lg bg-gray-200 shadow"
+    >
+      <svg
+        className="w-6 h-6 text-black"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    </button>
+
+    {/* Dropdown menu */}
+    {isMobileMenuOpen && (
+      <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg flex flex-col z-20">
+        <button
+          onClick={() =>
+            router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+          }
+          className="px-4 py-2 text-left hover:bg-gray-100"
+        >
+          Order Status
+        </button>
+        <button
+          onClick={() =>
+            router.push(`/customerMenu/cart?table=${dbTableNo}`)
+          }
+          className="px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
+        >
+          <span>Cart</span>
+          {cartCount > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      </div>
+    )}
+  </div>
+ </div>
+
         </header>
 
         {/* Hero / Video banner */}
@@ -599,12 +655,12 @@ Price: ₹${selectedFood.price}`
                           </div>
                         </div>
 
-                        <h3 className="text-black text-lg font-extrabold leading-snug">
+                        <h3 className="text-black text-lg font-extrabold">
                           {food.title || "Untitled"}
                         </h3>
 
-                        <p className="text-black/70 text-sm line-clamp-2">{food.description}</p>
-                         <p className="text-black/70 text-sm line-clamp-2">{food.ingredients}</p>
+                        <p className="text-black/70 text-sm">{food.description}</p>
+                         <p className="text-black/70 text-sm">{food.ingredients}</p>
 
                         <Separator className="my-2 border-gray-200" />
 
