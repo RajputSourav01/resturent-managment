@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,16 +22,20 @@ export default function Theme() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
-  // Load existing data from Firebase on component mount
+  // ⭐ ADDED: LIST STATES
+  const [themeList, setThemeList] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   useEffect(() => {
     loadExistingData();
+    loadThemeList();   // ⭐ ADDED
   }, []);
 
   const loadExistingData = async () => {
     try {
       const docRef = doc(db, "themeSettings", "globalTheme");
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         setRestaurantName(data.restaurantName || "");
@@ -43,6 +47,14 @@ export default function Theme() {
     } catch (error) {
       console.error("Error loading data:", error);
     }
+  };
+
+  // ⭐ ADDED: Load All Theme Items
+  const loadThemeList = async () => {
+    const snap = await getDocs(collection(db, "themeSettings"));
+    const list: any[] = [];
+    snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+    setThemeList(list);
   };
 
   // Upload file to Cloudinary
@@ -93,10 +105,9 @@ export default function Theme() {
       setThemeImgUrl(url);
     }
     setUploadingTheme(false);
-    e.target.value = ""; // Clear input
+    e.target.value = ""; 
   };
 
-  // Handle logo upload
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,10 +118,9 @@ export default function Theme() {
       setLogoUrl(url);
     }
     setUploadingLogo(false);
-    e.target.value = ""; // Clear input
+    e.target.value = "";
   };
 
-  // Handle video upload
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -121,13 +131,13 @@ export default function Theme() {
       setSeasonalVideoUrl(url);
     }
     setUploadingVideo(false);
-    e.target.value = ""; // Clear input
+    e.target.value = "";
   };
 
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!restaurantName.trim()) {
       alert("Please enter restaurant name");
       return;
@@ -136,23 +146,43 @@ export default function Theme() {
     setIsSaving(true);
 
     try {
-      const docRef = doc(db, "themeSettings", "globalTheme");
+      const docRef = doc(db, "themeSettings", editingId ?? Date.now().toString()); // ⭐ CHANGED FOR MULTIPLE ITEMS
       await setDoc(docRef, {
         restaurantName: restaurantName.trim(),
         colorPicker,
         themeImgUrl,
         logoUrl,
         seasonalVideoUrl,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
-      alert("Theme settings saved successfully!");
+      alert(editingId ? "Updated Successfully!" : "Saved Successfully!");
+
+      setEditingId(null);
+      loadThemeList(); // ⭐ ADDED REFRESH LIST
     } catch (error) {
       console.error("Save error:", error);
       alert("Failed to save. Please try again.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // ⭐ ADDED: Delete
+  const deleteTheme = async (id: string) => {
+    if (!confirm("Delete this theme?")) return;
+    await deleteDoc(doc(db, "themeSettings", id));
+    loadThemeList();
+  };
+
+  // ⭐ ADDED: Edit
+  const editTheme = (item: any) => {
+    setEditingId(item.id);
+    setRestaurantName(item.restaurantName);
+    setColorPicker(item.colorPicker);
+    setThemeImgUrl(item.themeImgUrl);
+    setLogoUrl(item.logoUrl);
+    setSeasonalVideoUrl(item.seasonalVideoUrl);
   };
 
   const isAnyUploading = uploadingTheme || uploadingLogo || uploadingVideo;
@@ -169,7 +199,8 @@ export default function Theme() {
 
           <CardContent>
             <form onSubmit={handleFormSubmit} className="space-y-6">
-              
+              {/* EXISTING FORM UNTOUCHED */}
+              {/* ------------------------- */}
               {/* Restaurant Name */}
               <div>
                 <Label htmlFor="restaurantName">Restaurant Name *</Label>
@@ -215,9 +246,9 @@ export default function Theme() {
                 )}
                 {themeImgUrl && (
                   <div className="mt-3">
-                    <img 
-                      src={themeImgUrl} 
-                      alt="Theme" 
+                    <img
+                      src={themeImgUrl}
+                      alt="Theme"
                       className="w-full h-40 object-cover rounded border"
                     />
                     <Button
@@ -249,9 +280,9 @@ export default function Theme() {
                 )}
                 {logoUrl && (
                   <div className="mt-3">
-                    <img 
-                      src={logoUrl} 
-                      alt="Logo" 
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
                       className="w-24 h-24 object-cover rounded border"
                     />
                     <Button
@@ -283,9 +314,9 @@ export default function Theme() {
                 )}
                 {seasonalVideoUrl && (
                   <div className="mt-3">
-                    <video 
-                      src={seasonalVideoUrl} 
-                      controls 
+                    <video
+                      src={seasonalVideoUrl}
+                      controls
                       className="w-full max-h-60 rounded border"
                     />
                     <Button
@@ -301,17 +332,50 @@ export default function Theme() {
                 )}
               </div>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isSaving || isAnyUploading}
                 className="w-full py-3"
               >
-                {isSaving ? "Saving..." : isAnyUploading ? "Uploading..." : "Save Theme Settings"}
+                {isSaving
+                  ? "Saving..."
+                  : isAnyUploading
+                  ? "Uploading..."
+                  : editingId
+                  ? "Update Theme"
+                  : "Save Theme Settings"}
               </Button>
             </form>
           </CardContent>
         </Card>
+
+        {/* ⭐ ADDED: LIST BELOW */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Saved Themes</h2>
+
+          {themeList.map((item) => (
+            <Card key={item.id} className="mb-4">
+              <CardContent className="p-4">
+                <p><b>Name:</b> {item.restaurantName}</p>
+                <p><b>Color:</b> {item.colorPicker}</p>
+
+                {item.themeImgUrl && (
+                  <img className="w-full h-32 rounded mt-2 object-cover" src={item.themeImgUrl} />
+                )}
+
+                <div className="flex gap-3 mt-4">
+                  <Button size="sm" onClick={() => editTheme(item)}>
+                    Edit
+                  </Button>
+
+                  <Button size="sm" variant="destructive" onClick={() => deleteTheme(item.id)}>
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

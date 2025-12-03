@@ -35,6 +35,15 @@ type Food = {
   description?: string;
   category?: string;
 };
+// Theme Settings Type
+type ThemeSettings = {
+  themeImgUrl?: string;
+  colorPicker?: string;
+  restaurantName?: string;
+  logoUrl?: string;
+  seasonalVideoUrl?: string;
+};
+
 
 export default function DigitalMenu() {
   const router = useRouter();
@@ -62,7 +71,41 @@ export default function DigitalMenu() {
   const [customerPhone, setCustomerPhone] = useState("");
   /* ------------------------------------------------------------ */
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+// Theme Settings State--------------------------------------------------
+  const [theme, setTheme] = useState<ThemeSettings>({
+  themeImgUrl: "",
+  colorPicker: "#000000",
+  restaurantName: "Golden Fork",
+  logoUrl: "/logo.png",
+  seasonalVideoUrl: "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
+});
+//  fetch theme settings from Firestore (if needed) ----------------
+useEffect(() => {
+  const loadTheme = async () => {
+    try {
+      const snap = await getDocs(collection(db, "themeSettings"));
 
+      if (!snap.empty) {
+        const data = snap.docs[0].data() as ThemeSettings;
+
+        setTheme({
+          themeImgUrl: data.themeImgUrl || "",
+          colorPicker: data.colorPicker || "#000000",
+          restaurantName: data.restaurantName || "Golden Fork",
+          logoUrl: data.logoUrl || "/logo.png",
+          seasonalVideoUrl:
+            data.seasonalVideoUrl ||
+            "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load theme settings:", err);
+    }
+  };
+
+  loadTheme();
+}, []);
+  /* ---------------------- FETCH TABLE & FOODS ---------------------- */
 
   useEffect(() => {
     const fetchDBTable = async () => {
@@ -438,23 +481,35 @@ Price: ₹${selectedFood.price}`
   });
 
   return (
-    <main className="min-h-screen relative bg-white text-black">
+    <main
+  className="min-h-screen relative"
+  style={{
+    backgroundImage: theme.themeImgUrl
+      ? `url(${theme.themeImgUrl})`
+      : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    color: theme.colorPicker,
+  }}
+>
+
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <header className="flex sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
-              <img
-                src="/logo.png"
-                alt="logo"
-                className="w-full h-full object-cover"
-              />
+              <img src={theme.logoUrl} className="w-full h-full object-cover" />
+
             </div>
             <div>
               <h1 className="text-black text-2xl sm:text-3xl font-extrabold tracking-tight">
-                <span className="text-yellow-500 text-4xl font-[cursive]">Golden Fork</span>
-                
+                <span
+                  className="text-4xl font-[cursive]"
+                   style={{ color: theme.colorPicker }}
+                      >
+                     {theme.restaurantName}
+                    </span>   
               </h1>
               
             </div>
@@ -545,7 +600,7 @@ Price: ₹${selectedFood.price}`
         <section className="mb-6">
           <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
             <video
-              src="https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4"
+              src={theme.seasonalVideoUrl}
               autoPlay
               muted
               loop
