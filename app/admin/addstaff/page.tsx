@@ -22,6 +22,8 @@ export default function AddStaffForm() {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+
 
   // ✅ STAFF STATE
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -84,6 +86,7 @@ export default function AddStaffForm() {
     formData.append('mobile', mobile);
     formData.append('aadhaar', aadhaar);
     formData.append('designation', designation);
+    formData.append("password", password);
     if (imageFile) formData.append('image', imageFile);
 
     try {
@@ -192,6 +195,15 @@ export default function AddStaffForm() {
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
             />
           </div>
+
+          <input 
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+               />
+
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>

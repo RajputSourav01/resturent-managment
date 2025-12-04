@@ -1,9 +1,9 @@
-// app/api/admin/add-staff/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
+import bcrypt from 'bcryptjs';  // ⭐ ADD THIS
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,43 +11,45 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
- // keep as default server
-
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
 
-    // Get fields
+    // Read fields
     const fullName = formData.get('fullName')?.toString() || '';
     const address = formData.get('address')?.toString() || '';
     const mobile = formData.get('mobile')?.toString() || '';
     const aadhaar = formData.get('aadhaar')?.toString() || '';
     const designation = formData.get('designation')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
 
-    // Validate minimal
     if (!fullName.trim() || !mobile.trim()) {
-      return NextResponse.json({ error: 'fullName and mobile are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'fullName and mobile are required' },
+        { status: 400 }
+      );
     }
 
-    // Image file (optional)
-    const imageFile = formData.get('image') as File | null;
+    // ⭐ HASH password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Handle Image Upload
+    const imageFile = formData.get('image') as File | null;
     let imageUrl: string | null = null;
+
     if (imageFile && imageFile.size > 0) {
-      // convert file to buffer
       const arrayBuffer = await imageFile.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      // upload stream to Cloudinary
       imageUrl = await new Promise<string>((resolve, reject) => {
-        const upload_stream = cloudinary.uploader.upload_stream(
+        const up = cloudinary.uploader.upload_stream(
           { folder: 'staff' },
-          (err: any, result: any) => {
+          (err, result) => {
             if (err) return reject(err);
-            resolve(result.secure_url);
+            resolve(result!.secure_url);
           }
         );
-        streamifier.createReadStream(buffer).pipe(upload_stream);
+        streamifier.createReadStream(buffer).pipe(up);
       });
     }
 
@@ -60,12 +62,16 @@ export async function POST(req: Request) {
       aadhaar,
       designation,
       imageUrl,
+      password: hashedPassword, // ⭐ STORE HASHED PASSWORD
       createdAt: new Date(),
     });
 
     return NextResponse.json({ ok: true, id: docRef.id });
   } catch (error: any) {
     console.error('Error in add-staff route:', error);
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Server error' },
+      { status: 500 }
+    );
   }
 }
