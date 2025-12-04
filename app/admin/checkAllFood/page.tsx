@@ -83,7 +83,7 @@ const AllFoodsList: React.FC = () => {
         <>
           {/* Stats */}
           <div className="mb-6 bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 text-center">
               <div className="p-4 bg-blue-50 rounded-lg">
                 <p className="text-2xl sm:text-3xl font-bold text-blue-600">{foods.length}</p>
                 <p className="text-sm text-gray-600">Total Items</p>

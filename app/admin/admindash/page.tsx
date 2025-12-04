@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Sales"
             value={`₹${stats.totalSales}`}
@@ -271,7 +271,7 @@ export default function AdminDashboardPage() {
           </div>
         {/* Summary */}
         <Card>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-6 text-center">
+          <CardContent className="grid grid-cols-3 sm:grid-cols-3 gap-4 p-4 sm:p-6 text-center">
             <div className="rounded-xl bg-blue-50 p-4">
               <p className="text-sm text-muted-foreground">Avg Daily Revenue</p>
               <p className="text-2xl font-bold text-blue-600">

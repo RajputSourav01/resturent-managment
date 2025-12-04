@@ -44,7 +44,6 @@ type ThemeSettings = {
   seasonalVideoUrl?: string;
 };
 
-
 export default function DigitalMenu() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,7 +58,9 @@ export default function DigitalMenu() {
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [expandedCards, setExpandedCards] = useState<{ [key: string]: boolean }>({});
+  const [expandedCards, setExpandedCards] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -72,40 +73,41 @@ export default function DigitalMenu() {
   const [customerPhone, setCustomerPhone] = useState("");
   /* ------------------------------------------------------------ */
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-// Theme Settings State--------------------------------------------------
+  // Theme Settings State--------------------------------------------------
   const [theme, setTheme] = useState<ThemeSettings>({
-  themeImgUrl: "",
-  colorPicker: "#000000",
-  restaurantName: "Golden Fork",
-  logoUrl: "/logo.png",
-  seasonalVideoUrl: "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
-});
-//  fetch theme settings from Firestore (if needed) ----------------
-useEffect(() => {
-  const loadTheme = async () => {
-    try {
-      const snap = await getDocs(collection(db, "themeSettings"));
+    themeImgUrl: "",
+    colorPicker: "#000000",
+    restaurantName: "Golden Fork",
+    logoUrl: "/logo.png",
+    seasonalVideoUrl:
+      "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
+  });
+  //  fetch theme settings from Firestore (if needed) ----------------
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const snap = await getDocs(collection(db, "themeSettings"));
 
-      if (!snap.empty) {
-        const data = snap.docs[0].data() as ThemeSettings;
+        if (!snap.empty) {
+          const data = snap.docs[0].data() as ThemeSettings;
 
-        setTheme({
-          themeImgUrl: data.themeImgUrl || "",
-          colorPicker: data.colorPicker || "#000000",
-          restaurantName: data.restaurantName || "Golden Fork",
-          logoUrl: data.logoUrl || "/logo.png",
-          seasonalVideoUrl:
-            data.seasonalVideoUrl ||
-            "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
-        });
+          setTheme({
+            themeImgUrl: data.themeImgUrl || "",
+            colorPicker: data.colorPicker || "#000000",
+            restaurantName: data.restaurantName || "Golden Fork",
+            logoUrl: data.logoUrl || "/logo.png",
+            seasonalVideoUrl:
+              data.seasonalVideoUrl ||
+              "https://cdn.pixabay.com/video/2025/01/16/252951_large.mp4",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load theme settings:", err);
       }
-    } catch (err) {
-      console.error("Failed to load theme settings:", err);
-    }
-  };
+    };
 
-  loadTheme();
-}, []);
+    loadTheme();
+  }, []);
   /* ---------------------- FETCH TABLE & FOODS ---------------------- */
 
   useEffect(() => {
@@ -206,11 +208,10 @@ useEffect(() => {
         foodId: food.id,
         title: food.title || "Unknown Food",
         price: food.price || 0,
-        imageUrl:
-          Array.isArray(food.imageUrl)
-            ? food.imageUrl[0]
-            : food.imageUrl ||
-              "https://via.placeholder.com/300x200?text=No+Image",
+        imageUrl: Array.isArray(food.imageUrl)
+          ? food.imageUrl[0]
+          : food.imageUrl ||
+            "https://via.placeholder.com/300x200?text=No+Image",
         category: food.category || "Uncategorized",
         description: food.description || "No description available",
         ingredients: (food as any)?.ingredients || [],
@@ -240,9 +241,7 @@ useEffect(() => {
       id: food.id,
       title: food.title,
       price: food.price,
-      imageUrl: Array.isArray(food.imageUrl)
-        ? food.imageUrl[0]
-        : food.imageUrl,
+      imageUrl: Array.isArray(food.imageUrl) ? food.imageUrl[0] : food.imageUrl,
       description: food.description,
       category: food.category,
       ingredients: food.ingredients,
@@ -355,7 +354,9 @@ useEffect(() => {
 
     let y = 115;
     items.forEach((it, idx) => {
-      const line = `${idx + 1}. ${it.title} x ${it.quantity} — ₹${it.price} each`;
+      const line = `${idx + 1}. ${it.title} x ${it.quantity} — ₹${
+        it.price
+      } each`;
       doc.text(line, 20, y);
       y += 8;
     });
@@ -475,7 +476,9 @@ Price: ₹${selectedFood.price}`
       <div className="min-h-screen flex items-center justify-center bg-white text-red-600 p-6">
         <div className="max-w-lg text-center">
           <h2 className="text-2xl font-extrabold">❌ Invalid Table</h2>
-          <p className="mt-2 text-black">Please scan the QR which is have on table.</p>
+          <p className="mt-2 text-black">
+            Please scan the QR which is have on table.
+          </p>
         </div>
       </div>
     );
@@ -498,20 +501,20 @@ Price: ₹${selectedFood.price}`
 
   return (
     <main
-  className="min-h-screen relative w-full"
-  style={{
-    backgroundImage: theme.themeImgUrl
-      ? `url(${theme.themeImgUrl})`
-      : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    color: theme.colorPicker,
-  }}
->
-      <div className="relative  w-full">
+      className="min-h-screen relative w-full"
+      style={{
+        backgroundImage: theme.themeImgUrl
+          ? `url(${theme.themeImgUrl})`
+          : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        color: theme.colorPicker,
+      }}
+    >
+      <div className="relative mt-5 z-10 w-full">
         {/* Header */}
-        <header className="flex items-center justify-between mt-4 ml-5 gap-4 mb-6">
-          <div className="flex items-center gap-3 sm:gap-4">
+        <header className="flex sm:flex-row items-start sm:items-center justify-between mb-6">
+          <div className="ml-2 flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
               <img src={theme.logoUrl} className="w-full h-full object-cover" />
             </div>
@@ -519,93 +522,94 @@ Price: ₹${selectedFood.price}`
               <h1 className="text-black text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
                 <span
                   className="text-2xl sm:text-3xl lg:text-4xl font-[cursive]"
-                   style={{ color: theme.colorPicker }}
-                      >
-                     {theme.restaurantName}
-                    </span>   
+                  style={{ color: theme.colorPicker }}
+                >
+                  {theme.restaurantName}
+                </span>
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-  {/* Desktop buttons: visible on md+ */}
-  <div className="hidden md:flex items-center mr-5 gap-3">
-    <button
-      onClick={() =>
-        router.push(`/customerMenu/order-status?table=${dbTableNo}`)
-      }
-      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
-    >
-      Order Status
-    </button>
+          <div className="flex items-center gap-3 mr-2">
+            {/* Desktop buttons: visible on md+ */}
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                onClick={() =>
+                  router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+                }
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
+              >
+                Order Status
+              </button>
 
-    <button
-      onClick={() =>
-        router.push(`/customerMenu/cart?table=${dbTableNo}`)
-      }
-      className="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold shadow"
-    >
-      <ShoppingCart size={16} />
-      <span>Cart</span>
-      {cartCount > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-          {cartCount}
-        </span>
-      )}
-    </button>
-  </div>
+              <button
+                onClick={() =>
+                  router.push(`/customerMenu/cart?table=${dbTableNo}`)
+                }
+                className="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold shadow"
+              >
+                <ShoppingCart size={16} />
+                <span>Cart</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
 
-  {/* Mobile hamburger: visible on mobile only */}
-  <div className="md:hidden relative mr-5">
-    <button
-      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      className="p-2 rounded-lg bg-gray-200 shadow"
-    >
-      <svg
-        className="w-6 h-6 text-black"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 6h16M4 12h16M4 18h16"
-        />
-      </svg>
-    </button>
+            {/* Mobile hamburger: visible on mobile only */}
+            <div className="md:hidden relative">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-lg bg-gray-200 shadow"
+              >
+                <svg
+                  className="w-6 h-6 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
 
-    {/* Dropdown menu */}
-    {isMobileMenuOpen && (
-      <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg flex flex-col z-20">
-        <button
-          onClick={() =>
-            router.push(`/customerMenu/order-status?table=${dbTableNo}`)
-          }
-          className="px-4 py-2 text-left hover:bg-gray-100"
-        >
-          Order Status
-        </button>
-        <button
-          onClick={() =>
-            router.push(`/customerMenu/cart?table=${dbTableNo}`)
-          }
-          className="px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
-        >
-          <span>Cart</span>
-          {cartCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-              {cartCount}
-            </span>
-          )}
-        </button>
-      </div>
-    )}
-  </div>
- </div>
-
+              {/* Dropdown menu */}
+              {isMobileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg flex flex-col z-20">
+                  <button
+                    onClick={() =>
+                      router.push(
+                        `/customerMenu/order-status?table=${dbTableNo}`
+                      )
+                    }
+                    className="px-4 py-2 text-left hover:bg-gray-100"
+                  >
+                    Order Status
+                  </button>
+                  <button
+                    onClick={() =>
+                      router.push(`/customerMenu/cart?table=${dbTableNo}`)
+                    }
+                    className="px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
+                  >
+                    <span>Cart</span>
+                    {cartCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </header>
 
         {/* Hero / Video banner */}
@@ -617,17 +621,21 @@ Price: ₹${selectedFood.price}`
               muted
               loop
               playsInline
-              className="w-full h-[73vh]  object-cover"
+              className="w-full h-[70vh] object-cover"
             />
-            <div className="p-4 bg-gradient-to-t from-gray-100 to-transparent">
-              <h2 className="text-black text-xl sm:text-2xl font-bold">Todays Specials 😋</h2>
-              <p className="text-black/70 mt-1 text-sm">🍽️Curated just for today — fresh, bold and unforgettable.</p>
+            <div className="p-4 bg-gradient-to-t from-gray-100 to-transparent ml-3">
+              <h2 className="text-black text-xl sm:text-2xl font-bold">
+                Seasonal Specials
+              </h2>
+              <p className="text-black/70 mt-1 text-sm">
+                Curated just for today — fresh, bold and unforgettable.
+              </p>
             </div>
           </div>
         </section>
 
         {/* Search + Filters */}
-        <section className="mb-6 m-1">
+        <section className="mb-6">
           <div className="flex flex-col gap-3">
             <div className="w-full">
               <div className="relative">
@@ -678,19 +686,20 @@ Price: ₹${selectedFood.price}`
         </section>
 
         {/* Menu Grid */}
-        <section className="mb-8 m-1">
+        <section className="mb-8">
           <div className="flex justify-center items-center ">
-           <span className="text-sm text-black/70 font-medium mb-4">
-             Digital Menu
-           </span>
+            <span className="text-sm text-black/70 font-medium mb-4">
+              Digital Menu
+            </span>
           </div>
           {loading ? (
-            <div className="text-center py-20 text-black/60 animate-pulse">Loading menu...</div>
+            <div className="text-center py-20 text-black/60 animate-pulse">
+              Loading menu...
+            </div>
           ) : filteredFoods.length === 0 ? (
             <div className="text-center py-20 text-black/60">No food found</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              
               {filteredFoods.map((food) => {
                 const imagesArray = Array.isArray(food.imageUrl)
                   ? (food.imageUrl as string[])
@@ -742,11 +751,14 @@ Price: ₹${selectedFood.price}`
                             {description && (
                               <div className="mb-2">
                                 <strong>Description: </strong>
-                                <span className={`${!isExpanded ? 'line-clamp-2' : 'block'}`}>
-                                  {!isExpanded && description.length > 100 
-                                    ? `${description.substring(0, 100)}...` 
-                                    : description
-                                  }
+                                <span
+                                  className={`${
+                                    !isExpanded ? "line-clamp-2" : "block"
+                                  }`}
+                                >
+                                  {!isExpanded && description.length > 100
+                                    ? `${description.substring(0, 100)}...`
+                                    : description}
                                 </span>
                               </div>
                             )}
@@ -757,13 +769,13 @@ Price: ₹${selectedFood.price}`
                               </div>
                             )}
                           </div>
-                          
+
                           {showReadMore && (
                             <button
                               onClick={() => toggleReadMore(food.id)}
                               className="text-orange-500 text-sm font-semibold hover:underline mt-2 block"
                             >
-                              {isExpanded ? 'see less' : 'see more..'}
+                              {isExpanded ? "see less" : "see more.."}
                             </button>
                           )}
                         </div>
@@ -819,14 +831,18 @@ Price: ₹${selectedFood.price}`
 
         {/* Footer / Notes */}
         <footer className="text-center text-black/60 mt-6">
-          <p className="text-sm">Thank you for dining with us — enjoy your meal 🍽️</p>
+          <p className="text-sm">
+            Thank you for dining with us — enjoy your meal 🍽️
+          </p>
         </footer>
 
         {/* ---------------------- CUSTOMER DETAILS POPUP ---------------------- */}
         <Dialog open={showCustomerPopup} onOpenChange={setShowCustomerPopup}>
           <DialogContent className="bg-white rounded-2xl p-6 max-w-md mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-black">Enter Your Details</DialogTitle>
+              <DialogTitle className="text-xl font-extrabold text-black">
+                Enter Your Details
+              </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-3 mt-3">
@@ -858,24 +874,45 @@ Price: ₹${selectedFood.price}`
         <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
           <DialogContent className="bg-white rounded-2xl p-6 max-w-md mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold text-black">Confirm Payment</DialogTitle>
+              <DialogTitle className="text-xl font-extrabold text-black">
+                Confirm Payment
+              </DialogTitle>
             </DialogHeader>
 
             {selectedFood && (
               <div className="space-y-3 mt-3 text-black">
                 <img
-                  src={Array.isArray(selectedFood.imageUrl) ? selectedFood.imageUrl[0] : (selectedFood.imageUrl as string)}
+                  src={
+                    Array.isArray(selectedFood.imageUrl)
+                      ? selectedFood.imageUrl[0]
+                      : (selectedFood.imageUrl as string)
+                  }
                   className="w-full h-44 object-cover rounded-lg"
                   alt={selectedFood.title as string}
                 />
-                <p className="text-sm"><b>Food:</b> {selectedFood.title}</p>
-                <p className="text-sm"><b>Category:</b> {selectedFood.category}</p>
-                <p className="text-sm"><b>Ingredients:</b> {selectedFood.ingredients}</p>
-                <p className="text-sm"><b>Quantity:</b> {qty[selectedFood.id] || 1}</p>
-                <p className="text-sm font-bold"><b>Total:</b> ₹{(selectedFood.price || 0) * (qty[selectedFood.id] || 1)}</p>
+                <p className="text-sm">
+                  <b>Food:</b> {selectedFood.title}
+                </p>
+                <p className="text-sm">
+                  <b>Category:</b> {selectedFood.category}
+                </p>
+                <p className="text-sm">
+                  <b>Ingredients:</b> {selectedFood.ingredients}
+                </p>
+                <p className="text-sm">
+                  <b>Quantity:</b> {qty[selectedFood.id] || 1}
+                </p>
+                <p className="text-sm font-bold">
+                  <b>Total:</b> ₹
+                  {(selectedFood.price || 0) * (qty[selectedFood.id] || 1)}
+                </p>
 
-                <Button className="w-full bg-orange-500 text-black rounded-lg font-bold" onClick={confirmPayment}>
-                  Pay Now ₹{(selectedFood.price || 0) * (qty[selectedFood.id] || 1)}
+                <Button
+                  className="w-full bg-orange-500 text-black rounded-lg font-bold"
+                  onClick={confirmPayment}
+                >
+                  Pay Now ₹
+                  {(selectedFood.price || 0) * (qty[selectedFood.id] || 1)}
                 </Button>
               </div>
             )}
@@ -886,20 +923,27 @@ Price: ₹${selectedFood.price}`
         <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
           <DialogContent className="bg-white text-black text-center rounded-2xl p-6 max-w-sm mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-extrabold">✅ Payment Successful</DialogTitle>
+              <DialogTitle className="text-2xl font-extrabold">
+                ✅ Payment Successful
+              </DialogTitle>
             </DialogHeader>
 
             <p className="mt-2 text-green-600 font-semibold">
               Your payment has been completed!
               <span
-                onClick={() => router.push(`/customerMenu/order-status?table=${dbTableNo}`)}
+                onClick={() =>
+                  router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+                }
                 className="text-orange-600 underline ml-1 cursor-pointer"
               >
                 Track Order
               </span>
             </p>
 
-            <Button className="mt-4 bg-black text-white rounded-lg" onClick={closeSuccess}>
+            <Button
+              className="mt-4 bg-black text-white rounded-lg"
+              onClick={closeSuccess}
+            >
               Close
             </Button>
           </DialogContent>
