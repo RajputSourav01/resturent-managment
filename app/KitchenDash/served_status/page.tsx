@@ -54,8 +54,14 @@ const ServedOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Fetch served orders
+  // Check authentication and fetch served orders
   useEffect(() => {
+    const staffData = localStorage.getItem('kitchen_staff');
+    
+    if (!staffData) {
+      router.replace('/KitchenDash');
+      return;
+    }
     const q = query(
       collection(db, "orders"),
       where("status", "==", "served"),

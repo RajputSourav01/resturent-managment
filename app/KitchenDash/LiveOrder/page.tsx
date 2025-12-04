@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ⭐ CHANGE — animated check icon
-import { CheckCircle } from "lucide-react"; // <-- ADD
+import { CheckCircle, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Order = {
   id: string;
@@ -33,8 +34,17 @@ type Order = {
 
 export default function KitchenDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
+    // Check authentication and start fetching data immediately
+    const staffData = localStorage.getItem('kitchen_staff');
+    
+    if (!staffData) {
+      router.replace('/KitchenDash');
+      return;
+    }
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const list: Order[] = snap.docs.map((d) => ({
@@ -42,13 +52,26 @@ export default function KitchenDashboard() {
         ...(d.data() as any),
       }));
       setOrders(list);
+      setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [router]);
 
   const updateStatus = async (id: string, status: string) => {
     await updateDoc(doc(db, "orders", id), { status });
   };
+
+  // Show loading screen while checking authentication or loading data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-gray-400">Loading kitchen dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-8">

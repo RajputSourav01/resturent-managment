@@ -50,6 +50,13 @@ const CookingOrdersPage = () => {
   const router = useRouter();
 
   useEffect(() => {
+    // Check authentication and start fetching data immediately
+    const staffData = localStorage.getItem('kitchen_staff');
+    
+    if (!staffData) {
+      router.replace('/KitchenDash');
+      return;
+    }
 
     // ⭐ FIXED — moved query inside try/catch for index handling
     let q;

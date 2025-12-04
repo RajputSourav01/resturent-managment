@@ -8,6 +8,14 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { LogOut, RefreshCw } from "lucide-react";
+
+interface StaffInfo {
+  id: string;
+  fullName: string;
+  designation: string;
+  imageUrl?: string;
+}
 
 export default function KitchenDashboard() {
   const router = useRouter();
@@ -18,32 +26,104 @@ export default function KitchenDashboard() {
     logoUrl: "/logo.png",
   });
 
-  const [staff, setStaff] = useState({
-    fullName: "John Doe",
-    designation: "Kitchen Staff",
-  });
-
+  const [staff, setStaff] = useState<StaffInfo | null>(null);
+  const [loading, setLoading] = useState(true);
   const [orderCounts, setOrderCounts] = useState({
     live: 0,
     cooking: 0,
     served: 0,
   });
 
-  // TODO: Replace with actual Firestore Queries
+  // Check authentication and load staff data
   useEffect(() => {
-    async function fetchOrders() {
-      // Example Firestore logic (replace accordingly)
-      // const ordersRef = collection(db, "restaurants/123/orders");
+    const checkAuth = () => {
+      const staffData = localStorage.getItem('kitchen_staff');
+      
+      if (!staffData) {
+        // No staff data found, redirect to login
+        router.push('/KitchenDash');
+        return;
+      }
 
-      setOrderCounts({
-        live: 5,
-        cooking: 2,
-        served: 12,
-      });
+      try {
+        const parsedStaff = JSON.parse(staffData);
+        setStaff(parsedStaff);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error parsing staff data:', error);
+        // Invalid data, clear and redirect
+        localStorage.removeItem('kitchen_staff');
+        router.push('/KitchenDash');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Fetch order counts
+  useEffect(() => {
+    if (!staff) return;
+
+    async function fetchOrders() {
+      try {
+        // Fetch live orders (status: "paid")
+        const liveQuery = query(collection(db, "orders"), where("status", "==", "paid"));
+        const liveSnap = await getDocs(liveQuery);
+        
+        // Fetch cooking orders
+        const cookingQuery = query(collection(db, "orders"), where("status", "==", "cooking"));
+        const cookingSnap = await getDocs(cookingQuery);
+        
+        // Fetch served orders
+        const servedQuery = query(collection(db, "orders"), where("status", "==", "served"));
+        const servedSnap = await getDocs(servedQuery);
+
+        setOrderCounts({
+          live: liveSnap.size,
+          cooking: cookingSnap.size,
+          served: servedSnap.size,
+        });
+      } catch (error) {
+        console.error("Error fetching order counts:", error);
+        // Fallback to example data
+        setOrderCounts({
+          live: 5,
+          cooking: 2,
+          served: 12,
+        });
+      }
     }
 
     fetchOrders();
-  }, []);
+  }, [staff]);
+
+  // Logout function
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to logout?")) {
+      // Clear staff data from localStorage
+      localStorage.removeItem('kitchen_staff');
+      
+      // Redirect to login page
+      router.push('/KitchenDash');
+    }
+  };
+
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no staff data (should redirect)
+  if (!staff) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -66,14 +146,41 @@ export default function KitchenDashboard() {
 
           {/* Staff Info */}
           <div className="p-4">
-            <p className="text-lg font-medium">{staff.fullName}</p>
-            <p className="text-sm text-gray-500">{staff.designation}</p>
+            <div className="flex items-center gap-3 mb-2">
+              {staff.imageUrl ? (
+                <img
+                  src={staff.imageUrl}
+                  width={40}
+                  height={40}
+                  alt="Staff Avatar"
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-gray-600 font-semibold">
+                    {staff.fullName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div>
+                <p className="text-lg font-medium">{staff.fullName}</p>
+                <p className="text-sm text-gray-500">{staff.designation}</p>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400 bg-gray-50 rounded px-2 py-1">
+              ID: {staff.id}
+            </div>
           </div>
         </div>
 
         {/* Bottom: Logout */}
         <div className="p-4">
-          <Button variant="destructive" className="w-full">
+          <Button 
+            variant="destructive" 
+            className="w-full flex items-center justify-center gap-2"
+            onClick={handleLogout}
+          >
+            <LogOut size={16} />
             Logout
           </Button>
         </div>
@@ -96,7 +203,7 @@ export default function KitchenDashboard() {
           >
             <Card className="bg-white shadow-md">
               <CardHeader>
-                <CardTitle>Live Orders</CardTitle>
+                <CardTitle>Live Pending Orders</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-4xl font-bold text-blue-600">

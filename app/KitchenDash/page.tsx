@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -12,27 +12,45 @@ export default function StaffLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Check if already authenticated
+  useEffect(() => {
+    const staffData = localStorage.getItem('kitchen_staff');
+    if (staffData) {
+      // Already logged in, redirect to dashboard
+      router.push('/KitchenDash/staffdash');
+    }
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const res = await fetch("/api/staff/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const res = await fetch("/api/staff/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
+      setLoading(false);
 
-    if (!res.ok) {
-      setError(data.error);
-      return;
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+
+      // SUCCESS → Store staff data in localStorage
+      localStorage.setItem('kitchen_staff', JSON.stringify(data.staff));
+      
+      // Redirect to dashboard
+      router.push("/KitchenDash/staffdash");
+    } catch (error) {
+      setLoading(false);
+      setError("Login failed. Please try again.");
+      console.error('Login error:', error);
     }
-
-    // SUCCESS → redirect
-    router.push("/KitchenDash/staffdash");
   };
 
   return (
