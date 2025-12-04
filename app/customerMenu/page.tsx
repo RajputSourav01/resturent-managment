@@ -508,9 +508,9 @@ Price: ₹${selectedFood.price}`
     color: theme.colorPicker,
   }}
 >
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative  w-full">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <header className="flex items-center justify-between mt-4 ml-5 gap-4 mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/20 bg-white/10">
               <img src={theme.logoUrl} className="w-full h-full object-cover" />
@@ -529,7 +529,7 @@ Price: ₹${selectedFood.price}`
 
           <div className="flex items-center gap-3">
   {/* Desktop buttons: visible on md+ */}
-  <div className="hidden md:flex items-center gap-3">
+  <div className="hidden md:flex items-center mr-5 gap-3">
     <button
       onClick={() =>
         router.push(`/customerMenu/order-status?table=${dbTableNo}`)
@@ -556,7 +556,7 @@ Price: ₹${selectedFood.price}`
   </div>
 
   {/* Mobile hamburger: visible on mobile only */}
-  <div className="md:hidden relative">
+  <div className="md:hidden relative mr-5">
     <button
       onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       className="p-2 rounded-lg bg-gray-200 shadow"
@@ -617,17 +617,17 @@ Price: ₹${selectedFood.price}`
               muted
               loop
               playsInline
-              className="w-full h-52 sm:h-64 md:h-72 object-cover"
+              className="w-full h-[73vh]  object-cover"
             />
             <div className="p-4 bg-gradient-to-t from-gray-100 to-transparent">
-              <h2 className="text-black text-xl sm:text-2xl font-bold">Seasonal Specials</h2>
-              <p className="text-black/70 mt-1 text-sm">Curated just for today — fresh, bold and unforgettable.</p>
+              <h2 className="text-black text-xl sm:text-2xl font-bold">Todays Specials 😋</h2>
+              <p className="text-black/70 mt-1 text-sm">🍽️Curated just for today — fresh, bold and unforgettable.</p>
             </div>
           </div>
         </section>
 
         {/* Search + Filters */}
-        <section className="mb-6">
+        <section className="mb-6 m-1">
           <div className="flex flex-col gap-3">
             <div className="w-full">
               <div className="relative">
@@ -678,12 +678,12 @@ Price: ₹${selectedFood.price}`
         </section>
 
         {/* Menu Grid */}
-        <section className="mb-8">
+        <section className="mb-8 m-1">
           <div className="flex justify-center items-center ">
-  <span className="text-sm text-black/70 font-medium mb-4">
-    Digital Menu
-  </span>
-</div>
+           <span className="text-sm text-black/70 font-medium mb-4">
+             Digital Menu
+           </span>
+          </div>
           {loading ? (
             <div className="text-center py-20 text-black/60 animate-pulse">Loading menu...</div>
           ) : filteredFoods.length === 0 ? (
