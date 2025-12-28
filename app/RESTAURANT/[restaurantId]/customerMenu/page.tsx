@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState, use } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -11,6 +11,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import jsPDF from "jspdf";
+import restaurantService from "@/lib/restaurant-service";
 
 // ShadCN
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,7 +45,8 @@ type ThemeSettings = {
   seasonalVideoUrl?: string;
 };
 
-export default function DigitalMenu() {
+export default function DigitalMenu({ params }: { params: Promise<{ restaurantId: string }> }) {
+  const { restaurantId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tableParam = searchParams.get("table");
@@ -86,7 +88,7 @@ export default function DigitalMenu() {
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const snap = await getDocs(collection(db, "themeSettings"));
+        const snap = await getDocs(collection(db, "restaurants", restaurantId, "themeSettings"));
 
         if (!snap.empty) {
           const data = snap.docs[0].data() as ThemeSettings;
@@ -113,38 +115,41 @@ export default function DigitalMenu() {
   useEffect(() => {
     const fetchDBTable = async () => {
       try {
-        const snap = await getDocs(collection(db, "tables"));
+        // Use restaurant-specific table collection
+        const tables = await restaurantService.getTables(restaurantId);
+        const tableNumbers = tables.map(table => table.number.toString());
 
-        const tables: string[] = snap.docs
-          .map((d) => {
-            const data = d.data();
-            const key = Object.keys(data).find((k) =>
-              k.toLowerCase().includes("table")
-            );
-            return key ? (data as any)[key].toString() : null;
-          })
-          .filter(Boolean) as string[];
-
-        if (tableParam && tables.includes(tableParam)) {
+        if (tableParam && tableNumbers.includes(tableParam)) {
           setDbTableNo(tableParam);
         } else {
           setDbTableNo(null);
         }
       } catch (err) {
         console.error("Failed to load tables:", err);
+        setDbTableNo(null);
       }
     };
 
-    fetchDBTable();
-  }, [tableParam]);
+    if (restaurantId && tableParam) {
+      fetchDBTable();
+    }
+  }, [tableParam, restaurantId]);
 
   useEffect(() => {
     const loadFoods = async () => {
       try {
-        const snap = await getDocs(collection(db, "foods"));
-        const list: Food[] = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any),
+        // Use restaurant-specific food collection
+        const foodData = await restaurantService.getFoods(restaurantId);
+        
+        // Convert restaurant service Food interface to component Food type
+        const list: Food[] = foodData.map((food) => ({
+          id: food.id!,
+          title: food.name,
+          ingredients: food.description || "",
+          price: food.price,
+          imageUrl: food.image || "https://via.placeholder.com/300",
+          description: food.description,
+          category: food.category,
         }));
 
         setFoods(list);
@@ -160,8 +165,10 @@ export default function DigitalMenu() {
       }
     };
 
-    loadFoods();
-  }, []);
+    if (restaurantId) {
+      loadFoods();
+    }
+  }, [restaurantId]);
 
   useEffect(() => {
     const cartKey = `cart_table_${dbTableNo || tableParam || "unknown"}`;
@@ -223,7 +230,7 @@ export default function DigitalMenu() {
         createdAt: serverTimestamp(),
       };
 
-      const ref = await addDoc(collection(db, "orders"), orderData);
+      const ref = await addDoc(collection(db, "restaurants", restaurantId, "orders"), orderData);
 
       return { id: ref.id, data: orderData };
     } catch (error) {
@@ -268,7 +275,7 @@ export default function DigitalMenu() {
   /* ---------------------- CUSTOMER SAVE ---------------------- */
   const saveCustomerToDB = async () => {
     try {
-      await addDoc(collection(db, "customers"), {
+      await addDoc(collection(db, "restaurants", restaurantId, "customers"), {
         name: customerName,
         phone: customerPhone,
         tableNo: dbTableNo || tableParam || "Unknown",
@@ -299,7 +306,7 @@ export default function DigitalMenu() {
   /* ---------------------- SAVE RECEIPT JSON TO FIRESTORE ---------------------- */
   const saveReceiptToDB = async (receipt: any) => {
     try {
-      await addDoc(collection(db, "receipts"), {
+      await addDoc(collection(db, "restaurants", restaurantId, "receipts"), {
         ...receipt,
         createdAt: serverTimestamp(),
       });
@@ -535,7 +542,7 @@ Price: ₹${selectedFood.price}`
             <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() =>
-                  router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+                  router.push(`/RESTAURANT/${restaurantId}/customerMenu/order-status?table=${dbTableNo}`)
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 text-black font-semibold shadow"
               >
@@ -544,7 +551,7 @@ Price: ₹${selectedFood.price}`
 
               <button
                 onClick={() =>
-                  router.push(`/customerMenu/cart?table=${dbTableNo}`)
+                  router.push(`/RESTAURANT/${restaurantId}/customerMenu/cart?table=${dbTableNo}`)
                 }
                 className="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-black font-semibold shadow"
               >
@@ -586,7 +593,7 @@ Price: ₹${selectedFood.price}`
                   <button
                     onClick={() =>
                       router.push(
-                        `/customerMenu/order-status?table=${dbTableNo}`
+                        `/RESTAURANT/${restaurantId}/customerMenu/order-status?table=${dbTableNo}`
                       )
                     }
                     className="px-4 py-2 text-left hover:bg-gray-100"
@@ -595,7 +602,7 @@ Price: ₹${selectedFood.price}`
                   </button>
                   <button
                     onClick={() =>
-                      router.push(`/customerMenu/cart?table=${dbTableNo}`)
+                      router.push(`/RESTAURANT/${restaurantId}/customerMenu/cart?table=${dbTableNo}`)
                     }
                     className="px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
                   >
@@ -932,7 +939,7 @@ Price: ₹${selectedFood.price}`
               Your payment has been completed!
               <span
                 onClick={() =>
-                  router.push(`/customerMenu/order-status?table=${dbTableNo}`)
+                  router.push(`/RESTAURANT/${restaurantId}/customerMenu/order-status?table=${dbTableNo}`)
                 }
                 className="text-orange-600 underline ml-1 cursor-pointer"
               >

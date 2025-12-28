@@ -27,7 +27,7 @@ import {
   RefreshCw 
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 interface Order {
   id: string;
@@ -48,6 +48,7 @@ const CookingOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { restaurantId }: any = useParams();
 
   useEffect(() => {
     // Check authentication and start fetching data immediately
@@ -62,7 +63,7 @@ const CookingOrdersPage = () => {
     let q;
     try {
       q = query(
-        collection(db, "orders"),
+        collection(db, "restaurants", restaurantId, "orders"),
         where("status", "==", "cooking"),
         orderBy("createdAt", "desc")
       ); // ⭐ FIXED
@@ -116,7 +117,7 @@ const CookingOrdersPage = () => {
 
   const markAsServed = async (id: string) => {
     try {
-      await updateDoc(doc(db, "orders", id), {
+      await updateDoc(doc(db, "restaurants", restaurantId, "orders", id), {
         status: "served",
       });
     } catch (error) {
@@ -127,7 +128,7 @@ const CookingOrdersPage = () => {
   const deleteOrder = async (id: string) => {
     if (confirm("Are you sure you want to delete this order?")) {
       try {
-        await deleteDoc(doc(db, "orders", id));
+        await deleteDoc(doc(db, "restaurants", restaurantId, "orders", id));
       } catch (error) {
         console.error("Error deleting order:", error);
       }

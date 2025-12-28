@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, use } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, onSnapshot } from "firebase/firestore";
 
 // ShadCN UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type OrderItem = {
   title: string;
@@ -42,24 +42,67 @@ const ORDER_STATUSES = [
   { key: "served", label: "Served", icon: "✅" },
 ];
 
-export default function OrderStatusPage() {
+export default function OrderStatusPage({ params }: { params: Promise<{ restaurantId: string }> }) {
+  const { restaurantId } = use(params);
+  const searchParams = useSearchParams();
+  const tableNo = searchParams.get("table");
   const [order, setOrder] = useState<OrderData | null>(null);
+  
+  // Theme Settings State
+  const [theme, setTheme] = useState<{
+    themeImgUrl?: string;
+    colorPicker?: string;
+    restaurantName?: string;
+    logoUrl?: string;
+    seasonalVideoUrl?: string;
+  }>({
+    themeImgUrl: "",
+    colorPicker: "#000000",
+    restaurantName: "Golden Fork",
+    logoUrl: "/logo.png",
+    seasonalVideoUrl: "",
+  });
+
+  // Load theme settings from Firestore
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const snap = await getDocs(collection(db, "restaurants", restaurantId, "themeSettings"));
+
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+
+          setTheme({
+            themeImgUrl: data.themeImgUrl || "",
+            colorPicker: data.colorPicker || "#000000",
+            restaurantName: data.restaurantName || "Golden Fork",
+            logoUrl: data.logoUrl || "/logo.png",
+            seasonalVideoUrl: data.seasonalVideoUrl || "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load theme settings:", err);
+      }
+    };
+
+    if (restaurantId) {
+      loadTheme();
+    }
+  }, [restaurantId]);
 
   useEffect(() => {
-    const loadOrder = async () => {
+    if (!tableNo) {
+      return;
+    }
+
+    const q = query(
+      collection(db, "restaurants", restaurantId, "orders"),
+      where("tableNo", "==", String(tableNo)),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snap) => {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const tableNo = urlParams.get("table");
-        if (!tableNo) return;
-
-        const q = query(
-          collection(db, "orders"),
-          where("tableNo", "==", tableNo),
-          limit(50)
-        );
-
-        const snap = await getDocs(q);
-
         if (!snap.empty) {
           const orders = snap.docs.map((doc) => ({
             id: doc.id,
@@ -112,14 +155,18 @@ export default function OrderStatusPage() {
             orderId: latest.id,
             createdAt: latest.createdAt,
           });
+        } else {
+          setOrder(null);
         }
       } catch (err) {
         console.error("Firestore order fetch error:", err);
       }
-    };
+    }, (error) => {
+      console.error("Real-time listener error:", error);
+    });
 
-    loadOrder();
-  }, []);
+    return () => unsubscribe();
+  }, [tableNo, restaurantId]);
 
   const currentStatusIndex = order
     ? ORDER_STATUSES.findIndex((s) => s.key === order.status?.toLowerCase())
@@ -147,20 +194,22 @@ export default function OrderStatusPage() {
     <main
       className="min-h-screen flex items-center justify-center p-3 sm:p-6 bg-cover bg-center bg-no-repeat relative overflow-x-hidden"
       style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')",
+        backgroundImage: theme.themeImgUrl 
+          ? `url(${theme.themeImgUrl})`
+          : "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')",
+        backgroundColor: theme.colorPicker,
       }}
     >
       <div className="absolute top-6 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
   <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg mb-2">
     <img
-      src="/logo.png"
-      alt="Golden Fork Logo"
+      src={theme.logoUrl}
+      alt={`${theme.restaurantName} Logo`}
       className="w-full h-full object-cover"
     />
   </div>
-  <h1 className="text-2xl sm:text-3xl font-[cursive] text-yellow-500 drop-shadow-lg">
-    Golden Fork
+  <h1 className="text-2xl sm:text-3xl font-[cursive] drop-shadow-lg" style={{ color: theme.colorPicker }}>
+    {theme.restaurantName}
   </h1>
 </div>
 

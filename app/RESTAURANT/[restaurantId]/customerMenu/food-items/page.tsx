@@ -88,7 +88,7 @@ export default function FoodItemsPage() {
     const loadFoods = async () => {
       try {
         const q = query(
-          collection(db, "foods"),
+          collection(db, "restaurants", restaurantId, "foods"),
           where("category", "==", category)
         );
 
@@ -144,7 +144,7 @@ export default function FoodItemsPage() {
         createdAt: serverTimestamp(),
       };
 
-      await addDoc(collection(db, "orders"), orderData);
+      await addDoc(collection(db, "restaurants", restaurantId, "orders"), orderData);
     } catch (error) {
       console.error("Order save failed:", error);
       alert("❌ Failed to place order. Try again!");

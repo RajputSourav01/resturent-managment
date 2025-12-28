@@ -7,45 +7,140 @@ import React, {
     useEffect 
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Your Firebase Auth instance
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-// 1. Define the Context Type
-interface AuthContextType {
-    user: User | null;
-    loading: boolean;
+// Define user roles
+export type UserRole = 'admin' | 'kitchen_staff' | 'super_admin';
+
+// Define auth user with additional properties
+export interface AuthUser extends User {
+    role?: UserRole;
+    restaurantId?: string;
+    staffId?: string;
 }
 
-// 2. Create the Context
+// Enhanced Auth Context Type
+interface AuthContextType {
+    user: AuthUser | null;
+    loading: boolean;
+    userRole: UserRole | null;
+    restaurantId: string | null;
+    isAdmin: boolean;
+    isKitchenStaff: boolean;
+    refreshUserData: () => Promise<void>;
+}
+
+// Create the Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 3. Create the Provider Component
+// Enhanced Auth Provider Component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<UserRole | null>(null);
+    const [restaurantId, setRestaurantId] = useState<string | null>(null);
+
+    const refreshUserData = async () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        try {
+            // Check if user is admin (has restaurant ownership)
+            const adminRestaurantId = localStorage.getItem('admin_restaurant');
+            const isAdminFlag = localStorage.getItem('admin') === 'true';
+            
+            if (isAdminFlag && adminRestaurantId) {
+                setUserRole('admin');
+                setRestaurantId(adminRestaurantId);
+                setUser({ 
+                    ...currentUser, 
+                    role: 'admin', 
+                    restaurantId: adminRestaurantId 
+                } as AuthUser);
+                return;
+            }
+
+            // Check if user is kitchen staff
+            const kitchenStaffData = localStorage.getItem('kitchen_staff');
+            if (kitchenStaffData) {
+                const staffData = JSON.parse(kitchenStaffData);
+                setUserRole('kitchen_staff');
+                setRestaurantId(staffData.restaurantId);
+                setUser({ 
+                    ...currentUser, 
+                    role: 'kitchen_staff', 
+                    restaurantId: staffData.restaurantId,
+                    staffId: staffData.staffId
+                } as AuthUser);
+                return;
+            }
+
+            // Default case - no specific role found
+            setUserRole(null);
+            setRestaurantId(null);
+            setUser({ ...currentUser } as AuthUser);
+
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            setUserRole(null);
+            setRestaurantId(null);
+        }
+    };
 
     useEffect(() => {
-        // Firebase Auth State Listener
-        // This function subscribes to the user's login status.
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setLoading(true);
+            
+            if (currentUser) {
+                // Set basic user first
+                setUser({ ...currentUser } as AuthUser);
+                
+                // Then fetch additional user data
+                await refreshUserData();
+            } else {
+                // Clear all user data when logged out
+                setUser(null);
+                setUserRole(null);
+                setRestaurantId(null);
+                
+                // Clear localStorage
+                localStorage.removeItem('admin');
+                localStorage.removeItem('admin_restaurant');
+                localStorage.removeItem('kitchen_staff');
+            }
+            
             setLoading(false);
         });
 
-        // Cleanup: Unsubscribe when the component unmounts
         return () => unsubscribe();
     }, []);
 
+    const contextValue: AuthContextType = {
+        user,
+        loading,
+        userRole,
+        restaurantId,
+        isAdmin: userRole === 'admin',
+        isKitchenStaff: userRole === 'kitchen_staff',
+        refreshUserData
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading }}>
-            {/* Render children only after the initial auth check is complete 
-              to prevent flickering or unauthorized access during loading.
-            */}
-            {loading ? <div>Loading application...</div> : children}
+        <AuthContext.Provider value={contextValue}>
+            {loading ? (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading application...</p>
+                    </div>
+                </div>
+            ) : children}
         </AuthContext.Provider>
     );
 };
 
-// 4. Custom Hook to use the Auth Context
+// Custom Hook to use the Auth Context
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

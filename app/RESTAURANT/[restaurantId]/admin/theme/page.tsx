@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function Theme() {
+export default function Theme({ restaurantId }: { restaurantId?: string }) {
   // Form state
   const [restaurantName, setRestaurantName] = useState("");
   const [colorPicker, setColorPicker] = useState("#000000");
@@ -33,7 +33,7 @@ export default function Theme() {
 
   const loadExistingData = async () => {
     try {
-      const docRef = doc(db, "themeSettings", "globalTheme");
+      const docRef = doc(db, "restaurants", restaurantId, "themeSettings", "globalTheme");
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -51,7 +51,7 @@ export default function Theme() {
 
   // ⭐ ADDED: Load All Theme Items
   const loadThemeList = async () => {
-    const snap = await getDocs(collection(db, "themeSettings"));
+    const snap = await getDocs(collection(db, "restaurants", restaurantId, "themeSettings"));
     const list: any[] = [];
     snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
     setThemeList(list);
@@ -146,7 +146,7 @@ export default function Theme() {
     setIsSaving(true);
 
     try {
-      const docRef = doc(db, "themeSettings", editingId ?? Date.now().toString()); // ⭐ CHANGED FOR MULTIPLE ITEMS
+      const docRef = doc(db, "restaurants", restaurantId, "themeSettings", editingId ?? Date.now().toString()); // ⭐ CHANGED FOR MULTIPLE ITEMS
       await setDoc(docRef, {
         restaurantName: restaurantName.trim(),
         colorPicker,
@@ -171,7 +171,7 @@ export default function Theme() {
   // ⭐ ADDED: Delete
   const deleteTheme = async (id: string) => {
     if (!confirm("Delete this theme?")) return;
-    await deleteDoc(doc(db, "themeSettings", id));
+    await deleteDoc(doc(db, "restaurants", restaurantId, "themeSettings", id));
     loadThemeList();
   };
 

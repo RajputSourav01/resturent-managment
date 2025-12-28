@@ -1,12 +1,13 @@
 // app/login/AdminLoginForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase'; // Assuming your firebase.ts is in lib/
 
-const AdminLoginForm: React.FC = () => {
+const AdminLoginForm: React.FC<{ params: Promise<{ restaurantId: string }> }> = ({ params }) => {
+  const { restaurantId } = use(params);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,7 @@ const AdminLoginForm: React.FC = () => {
 
       // 2. Login successful, navigate to admin dashboard
       localStorage.setItem("admin", "true");
-      router.push('/admin/admindash'); 
+      router.push(`/RESTAURANT/${restaurantId}/admin/admindash`); 
 
     } catch (err: any) {
       // 3. Handle specific Firebase errors
@@ -137,4 +138,6 @@ const AdminLoginForm: React.FC = () => {
   );
 };
 
-export default AdminLoginForm;
+export default function AdminLoginPage({ params }: { params: Promise<{ restaurantId: string }> }) {
+  return <AdminLoginForm params={params} />;
+}

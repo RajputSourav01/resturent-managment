@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -28,7 +28,8 @@ type CartItem = {
   quantity: number;
 };
 
-export default function CartPage() {
+export default function CartPage({ params }: { params: Promise<{ restaurantId: string }> }) {
+  const { restaurantId } = use(params);
   const [cart, setCart] = useState<CartItem[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -150,18 +151,20 @@ export default function CartPage() {
       setSaving(true);
 
       // SAVE CUSTOMER INFO
-      const customerRef = await addDoc(collection(db, "Customers"), {
+      const customerRef = await addDoc(collection(db, "restaurants", restaurantId, "customers"), {
         name: customerName,
         phone: customerPhone,
-        tableNo: tableNo,
+        tableNo: String(tableNo),
         createdAt: serverTimestamp(),
       });
 
       // SAVE ITEMS TO ORDERS
       for (const item of cart) {
-        await addDoc(collection(db, "orders"), {
-          tableNo: tableNo || "Unknown",
+        await addDoc(collection(db, "restaurants", restaurantId, "orders"), {
+          tableNo: String(tableNo || "Unknown"),
           customerId: customerRef.id,
+          customerName: customerName,
+          customerPhone: customerPhone,
           foodId: item.id,
           title: item.title,
           price: item.price,
@@ -177,8 +180,8 @@ export default function CartPage() {
       }
 
       // SAVE RECEIPT
-      await addDoc(collection(db, "Cartreceipts"), {
-        tableNo: tableNo,
+      await addDoc(collection(db, "restaurants", restaurantId, "receipts"), {
+        tableNo: String(tableNo),
         customerName,
         customerPhone,
         items: cart,
@@ -195,7 +198,7 @@ export default function CartPage() {
       setCart([]);
 
       setIsPayOpen(false);
-      setTimeout(() => setIsSuccessOpen(true), 300);
+      setIsSuccessOpen(true);
     } catch (err) {
       console.error(err);
       alert("❌ Order failed!");
@@ -206,7 +209,7 @@ export default function CartPage() {
 
   const closeSuccess = () => {
     setIsSuccessOpen(false);
-    router.push(`/customerMenu/order-status?table=${tableNo}`);
+    router.push(`/RESTAURANT/${restaurantId}/customerMenu/order-status?table=${tableNo}`);
   };
 
   // -----------------------------
@@ -332,10 +335,18 @@ export default function CartPage() {
             <DialogTitle className="text-2xl">✅ Payment Successful</DialogTitle>
           </DialogHeader>
 
-          <p className="mt-3 text-green-600 font-semibold text-lg">Your order has been placed successfully!</p>
+          <p className="mt-3 text-green-600 font-semibold text-lg">
+            Your payment has been completed!{" "}
+            <span 
+              className="text-blue-600 underline cursor-pointer hover:text-blue-800 transition-colors"
+              onClick={closeSuccess}
+            >
+              Track Order
+            </span>
+          </p>
 
-          <Button className="mt-6 bg-black text-white px-10 py-6 text-lg" onClick={closeSuccess}>
-            Track Order
+          <Button className="mt-6 bg-gray-500 text-white px-10 py-6 text-lg" onClick={() => setIsSuccessOpen(false)}>
+            Close
           </Button>
         </DialogContent>
       </Dialog>

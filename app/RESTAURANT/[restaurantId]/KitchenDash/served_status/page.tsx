@@ -13,7 +13,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { 
   ArrowLeft, 
   Trash2, 
@@ -53,6 +53,7 @@ const ServedOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { restaurantId }: any = useParams();
 
   // Check authentication and fetch served orders
   useEffect(() => {
@@ -63,7 +64,7 @@ const ServedOrdersPage = () => {
       return;
     }
     const q = query(
-      collection(db, "orders"),
+      collection(db, "restaurants", restaurantId, "orders"),
       where("status", "==", "served"),
       orderBy("createdAt", "desc")
     );
@@ -111,7 +112,7 @@ const ServedOrdersPage = () => {
   // Mark as completed
   const markAsCompleted = async (id: string) => {
     try {
-      await updateDoc(doc(db, "orders", id), {
+      await updateDoc(doc(db, "restaurants", restaurantId, "orders", id), {
         status: "completed"
       });
     } catch (error) {
@@ -123,7 +124,7 @@ const ServedOrdersPage = () => {
   const deleteOrder = async (id: string) => {
     if (confirm("Are you sure you want to delete this order?")) {
       try {
-        await deleteDoc(doc(db, "orders", id));
+        await deleteDoc(doc(db, "restaurants", restaurantId, "orders", id));
       } catch (error) {
         console.error("Error deleting order:", error);
       }

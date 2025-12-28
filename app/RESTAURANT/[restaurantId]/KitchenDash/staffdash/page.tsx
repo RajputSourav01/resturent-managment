@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { LogOut, RefreshCw } from "lucide-react";
 
 interface StaffInfo {
@@ -19,6 +19,7 @@ interface StaffInfo {
 
 export default function KitchenDashboard() {
   const router = useRouter();
+  const { restaurantId }: any = useParams();
 
   // States
   const [restaurantInfo, setRestaurantInfo] = useState({
@@ -67,15 +68,15 @@ export default function KitchenDashboard() {
     async function fetchOrders() {
       try {
         // Fetch live orders (status: "paid")
-        const liveQuery = query(collection(db, "orders"), where("status", "==", "paid"));
+        const liveQuery = query(collection(db, "restaurants", restaurantId, "orders"), where("status", "==", "paid"));
         const liveSnap = await getDocs(liveQuery);
         
         // Fetch cooking orders
-        const cookingQuery = query(collection(db, "orders"), where("status", "==", "cooking"));
+        const cookingQuery = query(collection(db, "restaurants", restaurantId, "orders"), where("status", "==", "cooking"));
         const cookingSnap = await getDocs(cookingQuery);
         
         // Fetch served orders
-        const servedQuery = query(collection(db, "orders"), where("status", "==", "served"));
+        const servedQuery = query(collection(db, "restaurants", restaurantId, "orders"), where("status", "==", "served"));
         const servedSnap = await getDocs(servedQuery);
 
         setOrderCounts({
@@ -158,13 +159,13 @@ export default function KitchenDashboard() {
               ) : (
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                   <span className="text-gray-600 font-semibold">
-                    {staff.fullName.charAt(0).toUpperCase()}
+                    {staff.fullName?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                 </div>
               )}
               <div>
-                <p className="text-lg font-medium">{staff.fullName}</p>
-                <p className="text-sm text-gray-500">{staff.designation}</p>
+                <p className="text-lg font-medium">{staff.fullName || 'Unknown Staff'}</p>
+                <p className="text-sm text-gray-500">{staff.designation || 'Staff'}</p>
               </div>
             </div>
             <div className="text-xs text-gray-400 bg-gray-50 rounded px-2 py-1">

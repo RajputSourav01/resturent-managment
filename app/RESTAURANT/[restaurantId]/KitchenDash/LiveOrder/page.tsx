@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ⭐ CHANGE — animated check icon
 import { CheckCircle, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 type Order = {
   id: string;
@@ -30,12 +30,15 @@ type Order = {
   status: string;
   category?: string;
   imageUrl?: string;
+  customerName?: string;
+  customerPhone?: string;
 };
 
 export default function KitchenDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { restaurantId }: any = useParams();
 
   useEffect(() => {
     // Check authentication and start fetching data immediately
@@ -45,7 +48,7 @@ export default function KitchenDashboard() {
       router.replace('/KitchenDash');
       return;
     }
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "restaurants", restaurantId, "orders"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const list: Order[] = snap.docs.map((d) => ({
         id: d.id,
@@ -58,7 +61,7 @@ export default function KitchenDashboard() {
   }, [router]);
 
   const updateStatus = async (id: string, status: string) => {
-    await updateDoc(doc(db, "orders", id), { status });
+    await updateDoc(doc(db, "restaurants", restaurantId, "orders", id), { status });
   };
 
   // Show loading screen while checking authentication or loading data
@@ -147,6 +150,9 @@ export default function KitchenDashboard() {
                       <p className="font-semibold text-gray-300 underline">
                         {o.title}
                       </p>
+                      {o.customerName && (
+                        <p className="text-sm text-blue-400">Customer: {o.customerName}</p>
+                      )}
                       <p className="text-sm text-gray-300">Qty: {o.quantity}</p>
                       <p className="text-sm text-gray-300">Price: ₹{o.price}</p>
                       <p className="text-green-400 font-bold text-lg">

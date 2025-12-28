@@ -5,33 +5,39 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 
-export async function POST(req: Request) {
+export async function POST(req: Request, { params }: { params: Promise<{ restaurantId: string }> }) {
   try {
-    const { username, password } = await req.json();
+    const { restaurantId } = await params;
+    const { mobile, password } = await req.json();
 
-    if (!username || !password) {
+    if (!mobile || !password) {
       return NextResponse.json(
-        { error: "Username & password required" },
+        { error: "Mobile & password required" },
         { status: 400 }
       );
     }
 
-    // Search username (case-insensitive)
-    const staffRef = collection(db, "staff");
-    const snap = await getDocs(staffRef);
-
-    let userDoc: any = null;
-
-    snap.forEach((doc) => {
-      const data = doc.data();
-      if (data.fullName?.toLowerCase() === username.toLowerCase()) {
-        userDoc = { id: doc.id, ...data };
-      }
-    });
-
-    if (!userDoc) {
-      return NextResponse.json({ error: "Invalid username" }, { status: 401 });
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: "Restaurant ID is required" },
+        { status: 400 }
+      );
     }
+
+    // Search mobile in restaurant-specific staff collection
+    const staffRef = collection(db, "restaurants", restaurantId, "staff");
+    const q = query(
+      staffRef, 
+      where("mobile", "==", mobile),
+      where("isActive", "==", true)
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return NextResponse.json({ error: "Invalid mobile number or staff inactive" }, { status: 401 });
+    }
+
+    const userDoc = { id: snap.docs[0].id, ...snap.docs[0].data() };
 
     // Compare password (case-sensitive)
     const isMatch = await bcrypt.compare(password, userDoc.password);
@@ -47,6 +53,7 @@ export async function POST(req: Request) {
         fullName: userDoc.fullName,
         designation: userDoc.designation,
         imageUrl: userDoc.imageUrl,
+        restaurantId: restaurantId
       },
     });
   } catch (err: any) {
