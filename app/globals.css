@@ -119,4 +119,83 @@
   body {
     @apply bg-background text-foreground;
   }
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* Prevent horizontal overflow on all elements */
+* {
+  max-width: 100%;
+}
+
+/* Fix container width issues */
+.container, 
+.max-w-7xl, 
+.max-w-6xl, 
+.max-w-5xl, 
+.max-w-4xl, 
+.max-w-3xl {
+  width: 100% !important;
+  max-width: calc(100vw - 2rem);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile responsive grid fixes */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* Text overflow prevention */
+.break-words {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+
+/* Line clamp utilities */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom xs breakpoint for very small screens */
+@media (min-width: 480px) {
+  .xs\:inline {
+    display: inline;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  /* Prevent content from shifting */
+  .container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl, .max-w-3xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Ensure cards don't overflow */
+  .card, [class*="Card"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }

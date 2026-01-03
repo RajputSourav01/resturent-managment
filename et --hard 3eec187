@@ -1,0 +1,31 @@
+[33mc476d7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcomplete[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/complete[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{0}: checkout: moving from master to complete
+[33mc476d7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcomplete[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/complete[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{1}: checkout: moving from multiTenants to master
+[33m3eec187[m[33m ([m[1;32mmultiTenants[m[33m)[m HEAD@{2}: commit: completed project
+[33m3c4da58[m[33m ([m[1;31morigin/multiTenants[m[33m)[m HEAD@{3}: commit: new commit filename change
+[33m4757199[m HEAD@{4}: commit: multi tenant structure
+[33m035e564[m[33m ([m[1;31morigin/KitchenWork[m[33m, [m[1;32mKitchenWork[m[33m)[m HEAD@{5}: checkout: moving from KitchenWork to multiTenants
+[33m035e564[m[33m ([m[1;31morigin/KitchenWork[m[33m, [m[1;32mKitchenWork[m[33m)[m HEAD@{6}: commit: kitchen dasboard final
+[33m4c12db6[m HEAD@{7}: commit: kitchen dasboard with login
+[33m722f856[m[33m ([m[1;31morigin/readyTopull[m[33m, [m[1;32mreadyTopull[m[33m)[m HEAD@{8}: checkout: moving from readyTopull to KitchenWork
+[33m722f856[m[33m ([m[1;31morigin/readyTopull[m[33m, [m[1;32mreadyTopull[m[33m)[m HEAD@{9}: commit: full updated single tenant code
+[33m8f724f7[m[33m ([m[1;31morigin/FinalProduct[m[33m, [m[1;32mFinalProduct[m[33m)[m HEAD@{10}: checkout: moving from FinalProduct to readyTopull
+[33m8f724f7[m[33m ([m[1;31morigin/FinalProduct[m[33m, [m[1;32mFinalProduct[m[33m)[m HEAD@{11}: commit: final output
+[33m045ef0c[m HEAD@{12}: commit: all set for ui
+[33mcd81853[m HEAD@{13}: commit: card modified final
+[33m5622578[m HEAD@{14}: commit: final fixed
+[33mf7f1e26[m HEAD@{15}: commit: added theme form
+[33m04dc033[m[33m ([m[1;31morigin/todayFinal[m[33m, [m[1;32mtodayFinal[m[33m)[m HEAD@{16}: checkout: moving from todayFinal to FinalProduct
+[33m04dc033[m[33m ([m[1;31morigin/todayFinal[m[33m, [m[1;32mtodayFinal[m[33m)[m HEAD@{17}: commit: rady theme
+[33md31decb[m HEAD@{18}: commit: theme
+[33m33ac0ae[m[33m ([m[1;32mupdated[m[33m)[m HEAD@{19}: checkout: moving from updated to todayFinal
+[33m33ac0ae[m[33m ([m[1;32mupdated[m[33m)[m HEAD@{20}: commit: recepeit update
+[33m679c509[m[33m ([m[1;31morigin/updated[m[33m, [m[1;32mnewbranch[m[33m)[m HEAD@{21}: checkout: moving from newbranch to updated
+[33m679c509[m[33m ([m[1;31morigin/updated[m[33m, [m[1;32mnewbranch[m[33m)[m HEAD@{22}: commit: latestReady
+[33mf186029[m[33m ([m[1;31morigin/sourav[m[33m, [m[1;31morigin/newbranch[m[33m, [m[1;32msourav[m[33m)[m HEAD@{23}: checkout: moving from sourav to newbranch
+[33mf186029[m[33m ([m[1;31morigin/sourav[m[33m, [m[1;31morigin/newbranch[m[33m, [m[1;32msourav[m[33m)[m HEAD@{24}: commit: last update
+[33m55165cd[m HEAD@{25}: commit: all fit changes
+[33mfb78c3b[m HEAD@{26}: commit: new branch
+[33mc476d7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcomplete[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/complete[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{27}: checkout: moving from master to sourav
+[33mc476d7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcomplete[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/complete[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{28}: commit: changes
+[33m1467b7a[m HEAD@{29}: commit: initial commit
+[33m7947d7d[m HEAD@{30}: commit (initial): Initial commit from Create Next App
