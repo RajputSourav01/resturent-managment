@@ -217,7 +217,7 @@ const CustomerMenuContent = () => {
                 <div className="aspect-video relative overflow-hidden">
                   {food.image ? (
                     <img
-                      src={food.image}
+                      src={Array.isArray(food.image) ? food.image[0] : food.image}
                       alt={food.name}
                       className="w-full h-full object-cover"
                     />

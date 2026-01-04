@@ -61,16 +61,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ restaur
       });
     }
 
-    // Add staff using restaurant service
-    const staffId = await restaurantService.addStaff(restaurantId, {
+    // Prepare staff data - only include imageUrl if it exists
+    const staffData: any = {
       fullName,
       address,
       mobile,
       aadhaar,
       designation,
-      imageUrl,
-      password: hashedPassword
-    });
+      password: hashedPassword,
+      isActive: true
+    };
+
+    // Only add imageUrl if it's not null/undefined
+    if (imageUrl) {
+      staffData.imageUrl = imageUrl;
+    }
+
+    // Add staff using restaurant service
+    const staffId = await restaurantService.addStaff(restaurantId, staffData);
 
     return NextResponse.json({ ok: true, id: staffId });
   } catch (error: any) {

@@ -3,7 +3,7 @@
 
 "use client";
 
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState, use } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -35,7 +35,12 @@ type Food = {
   category?: string;
 };
 
-export default function FoodItemsPage() {
+export default function FoodItemsPage({
+  params
+}: {
+  params: Promise<{ restaurantId: string }>
+}) {
+  const { restaurantId } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
   const category = searchParams.get("category");

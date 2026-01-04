@@ -87,7 +87,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ params }) => {
 
   const handleEdit = (foodId: string) => {
     if (!isAdmin) return;
-    router.push(`/RESTAURANT/${restaurantId}/admin/editfood?id=${foodId}`);
+    router.push(`/RESTAURANT/${restaurantId}/admin/addfood?id=${foodId}`);
   };
 
   const handleAddNew = () => {
@@ -113,6 +113,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ params }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
+        <button
+      onClick={() => router.back()}
+      className="px-4 py-2 rounded bg-gray-800 text-white"
+    >
+      ← Back
+    </button>
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -224,7 +230,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ params }) => {
                   <div className="aspect-video relative overflow-hidden">
                     {food.image ? (
                       <img
-                        src={food.image}
+                        src={Array.isArray(food.image) ? food.image[0] : food.image}
                         alt={food.name}
                         className="w-full h-full object-cover"
                       />

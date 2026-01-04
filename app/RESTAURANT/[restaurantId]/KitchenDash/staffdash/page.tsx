@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, onSnapshot } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
@@ -97,6 +97,45 @@ export default function KitchenDashboard() {
 
     fetchOrders();
   }, [staff]);
+
+  // Real-time listener for restaurant blocking status
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, "restaurants", restaurantId),
+      async (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          if (data.isBlocked) {
+            // Restaurant has been blocked, logout immediately
+            alert('Your restaurant has been blocked by Super Admin. You will be logged out.');
+            
+            // Use Firebase signOut to properly clear authentication
+            try {
+              const { signOut } = await import('firebase/auth');
+              const { auth } = await import('@/lib/firebase');
+              await signOut(auth);
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
+            
+            // Clear all localStorage data
+            localStorage.clear();
+            
+            // Redirect to home page
+            router.push('/');
+          }
+        }
+      },
+      (error) => {
+        console.error("Error listening to restaurant status:", error);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [restaurantId, router]);
 
   // Logout function
   const handleLogout = () => {

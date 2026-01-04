@@ -63,6 +63,39 @@ const ServedOrdersPage = () => {
       router.replace('/KitchenDash');
       return;
     }
+
+    // Real-time listener for restaurant blocking status
+    const unsubscribeBlocking = onSnapshot(
+      doc(db, "restaurants", restaurantId),
+      async (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          if (data.isBlocked) {
+            // Restaurant has been blocked, logout immediately
+            alert('Your restaurant has been blocked by Super Admin. You will be logged out.');
+            
+            // Use Firebase signOut to properly clear authentication
+            try {
+              const { signOut } = await import('firebase/auth');
+              const { auth } = await import('@/lib/firebase');
+              await signOut(auth);
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
+            
+            // Clear all localStorage data
+            localStorage.clear();
+            
+            // Redirect to home page
+            router.push('/');
+            return;
+          }
+        }
+      },
+      (error) => {
+        console.error("Error listening to restaurant status:", error);
+      }
+    );
     const q = query(
       collection(db, "restaurants", restaurantId, "orders"),
       where("status", "==", "served"),
@@ -81,7 +114,10 @@ const ServedOrdersPage = () => {
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubscribeBlocking();
+    };
   }, []);
 
   // Excel Export
@@ -225,7 +261,7 @@ const ServedOrdersPage = () => {
                       <img 
                         src={order.imageUrl} 
                         alt={order.title}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-40 sm:h-44 lg:h-40 object-cover rounded-lg shadow-md"
                       />
                     </div>
                   )}

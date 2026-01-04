@@ -6,9 +6,9 @@ import React, {
     useState, 
     useEffect 
 } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 
 // Define user roles
 export type UserRole = 'admin' | 'kitchen_staff' | 'super_admin';
@@ -29,6 +29,7 @@ interface AuthContextType {
     isAdmin: boolean;
     isKitchenStaff: boolean;
     refreshUserData: () => Promise<void>;
+    forceLogout: () => Promise<void>;
 }
 
 // Create the Context
@@ -41,6 +42,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [userRole, setUserRole] = useState<UserRole | null>(null);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
 
+    // Force logout function
+    const forceLogout = async () => {
+        try {
+            await signOut(auth);
+            // Clear localStorage
+            localStorage.removeItem('admin');
+            localStorage.removeItem('admin_restaurant');
+            localStorage.removeItem('kitchen_staff');
+            
+            // Reset state
+            setUser(null);
+            setUserRole(null);
+            setRestaurantId(null);
+            
+            console.log('User logged out due to database validation failure');
+        } catch (error) {
+            console.error('Error during force logout:', error);
+        }
+    };
+
+    // Validate admin exists in database
+    const validateAdminExists = async (email: string, adminRestaurantId: string): Promise<boolean> => {
+        try {
+            const adminsQuery = query(
+                collection(db, 'admins'),
+                where('email', '==', email),
+                where('restaurantId', '==', adminRestaurantId)
+            );
+            const adminSnapshot = await getDocs(adminsQuery);
+            
+            if (adminSnapshot.empty) {
+                console.log('Admin not found in database:', email, adminRestaurantId);
+                return false;
+            }
+
+            const adminData = adminSnapshot.docs[0].data();
+            if (adminData.isActive === false) {
+                console.log('Admin account is inactive:', email);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error validating admin:', error);
+            return false;
+        }
+    };
+
+    // Validate staff exists in database
+    const validateStaffExists = async (staffId: string, staffRestaurantId: string): Promise<boolean> => {
+        try {
+            const staffDoc = await getDoc(doc(db, 'restaurants', staffRestaurantId, 'staff', staffId));
+            
+            if (!staffDoc.exists()) {
+                console.log('Staff not found in database:', staffId, staffRestaurantId);
+                return false;
+            }
+
+            const staffData = staffDoc.data();
+            if (staffData.isActive === false) {
+                console.log('Staff account is inactive:', staffId);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error validating staff:', error);
+            return false;
+        }
+    };
+
     const refreshUserData = async () => {
         const currentUser = auth.currentUser;
         if (!currentUser) return;
@@ -50,7 +122,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const adminRestaurantId = localStorage.getItem('admin_restaurant');
             const isAdminFlag = localStorage.getItem('admin') === 'true';
             
-            if (isAdminFlag && adminRestaurantId) {
+            if (isAdminFlag && adminRestaurantId && currentUser.email) {
+                // Validate admin exists in database
+                const adminExists = await validateAdminExists(currentUser.email, adminRestaurantId);
+                
+                if (!adminExists) {
+                    console.log('Admin validation failed - forcing logout');
+                    await forceLogout();
+                    return;
+                }
+
                 setUserRole('admin');
                 setRestaurantId(adminRestaurantId);
                 setUser({ 
@@ -65,6 +146,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const kitchenStaffData = localStorage.getItem('kitchen_staff');
             if (kitchenStaffData) {
                 const staffData = JSON.parse(kitchenStaffData);
+                
+                // Validate staff exists in database
+                const staffExists = await validateStaffExists(staffData.staffId, staffData.restaurantId);
+                
+                if (!staffExists) {
+                    console.log('Staff validation failed - forcing logout');
+                    await forceLogout();
+                    return;
+                }
+
                 setUserRole('kitchen_staff');
                 setRestaurantId(staffData.restaurantId);
                 setUser({ 
@@ -123,7 +214,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         restaurantId,
         isAdmin: userRole === 'admin',
         isKitchenStaff: userRole === 'kitchen_staff',
-        refreshUserData
+        refreshUserData,
+        forceLogout
     };
 
     return (

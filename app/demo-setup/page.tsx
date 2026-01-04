@@ -45,25 +45,25 @@ export default function DemoSetupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-center mb-6">Demo Setup</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full mx-auto bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">Demo Setup</h1>
         
         <button
           onClick={createDemoAdmin}
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-blue-600 text-white py-2 sm:py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm sm:text-base"
         >
           {loading ? 'Creating...' : 'Create Demo Admin'}
         </button>
 
         {message && (
           <div className="mt-4 p-3 bg-gray-100 rounded-md">
-            <pre className="text-sm whitespace-pre-wrap">{message}</pre>
+            <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message}</pre>
           </div>
         )}
 
-        <div className="mt-6 text-sm text-gray-600">
+        <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-600">
           <p><strong>Usage:</strong></p>
           <p>1. Click "Create Demo Admin" to set up a demo restaurant and admin account</p>
           <p>2. Go back to home page and login with the provided credentials</p>

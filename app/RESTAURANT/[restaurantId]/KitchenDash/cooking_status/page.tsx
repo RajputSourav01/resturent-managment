@@ -59,14 +59,47 @@ const CookingOrdersPage = () => {
       return;
     }
 
-    // ⭐ FIXED — moved query inside try/catch for index handling
+    // Real-time listener for restaurant blocking status
+    const unsubscribeBlocking = onSnapshot(
+      doc(db, "restaurants", restaurantId),
+      async (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          if (data.isBlocked) {
+            // Restaurant has been blocked, logout immediately
+            alert('Your restaurant has been blocked by Super Admin. You will be logged out.');
+            
+            // Use Firebase signOut to properly clear authentication
+            try {
+              const { signOut } = await import('firebase/auth');
+              const { auth } = await import('@/lib/firebase');
+              await signOut(auth);
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
+            
+            // Clear all localStorage data
+            localStorage.clear();
+            
+            // Redirect to home page
+            router.push('/');
+            return;
+          }
+        }
+      },
+      (error) => {
+        console.error("Error listening to restaurant status:", error);
+      }
+    );
+
+    //  FIXED — moved query inside try/catch for index handling
     let q;
     try {
       q = query(
         collection(db, "restaurants", restaurantId, "orders"),
         where("status", "==", "cooking"),
         orderBy("createdAt", "desc")
-      ); // ⭐ FIXED
+      ); //  FIXED
     } catch (err) {
       console.error("⚠️ Firestore index missing. Create the index.", err);
       setLoading(false);
@@ -91,7 +124,10 @@ const CookingOrdersPage = () => {
       }
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubscribeBlocking();
+    };
   }, []);
 
   // Download Excel
@@ -228,7 +264,7 @@ const CookingOrdersPage = () => {
                       <img 
                         src={order.imageUrl} 
                         alt={order.title}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-40 sm:h-44 lg:h-40 object-cover rounded-lg shadow-md"
                       />
                     </div>
                   )}

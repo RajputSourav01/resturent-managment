@@ -142,15 +142,37 @@ export default function DigitalMenu({ params }: { params: Promise<{ restaurantId
         const foodData = await restaurantService.getFoods(restaurantId);
         
         // Convert restaurant service Food interface to component Food type
-        const list: Food[] = foodData.map((food) => ({
-          id: food.id!,
-          title: food.name,
-          ingredients: food.description || "",
-          price: food.price,
-          imageUrl: food.image || "https://via.placeholder.com/300",
-          description: food.description,
-          category: food.category,
-        }));
+        const list: Food[] = foodData.map((food) => {
+          let images: string[] = [];
+          
+          // First try to get images from 'images' field (new multiple images format)
+          if (Array.isArray(food.images) && food.images.length > 0) {
+            images = food.images.filter(url => url && url.trim() !== '');
+          }
+          // Fallback to 'image' field (backward compatibility)
+          else if (food.image) {
+            if (Array.isArray(food.image)) {
+              images = food.image.filter(url => url && url.trim() !== '');
+            } else {
+              images = [food.image];
+            }
+          }
+          
+          // If no valid images found, use placeholder
+          if (images.length === 0) {
+            images = ["https://via.placeholder.com/300x200?text=No+Image"];
+          }
+
+          return {
+            id: food.id!,
+            title: food.name,
+            ingredients: food.description || "",
+            price: food.price,
+            imageUrl: images,
+            description: food.description,
+            category: food.category,
+          };
+        });
 
         setFoods(list);
         const uniq = [
@@ -331,47 +353,162 @@ export default function DigitalMenu({ params }: { params: Promise<{ restaurantId
     }
   };
 
-  /* ---------------------- GENERATE PDF USING jsPDF ---------------------- */
+  /* ---------------------- GENERATE COMPACT BEAUTIFUL PDF RECEIPT ---------------------- */
   const generateReceiptPDF = async (
     orderId: string,
     orderData: any,
     items: any[],
     total: number
   ) => {
-    const doc = new jsPDF();
-
-    // Try fetch logo and add
-    const logoUrl = "/logo.png"; // adjust if your logo path is different
-    const logoData = await fetchImageAsDataUrl(logoUrl);
-    if (logoData) {
-      // addImage(x, y, w, h) normal usage
-      doc.addImage(logoData, "PNG", 15, 10, 30, 30);
-    }
-
-    doc.setFontSize(18);
-    doc.text("My Restaurant", 55, 20);
-
-    doc.setFontSize(12);
-    doc.text(`Order Receipt`, 20, 50);
-    doc.text(`Order ID: ${orderId}`, 20, 60);
-    doc.text(`Customer: ${orderData.customerName}`, 20, 70);
-    doc.text(`Phone: ${orderData.customerPhone}`, 20, 80);
-    doc.text(`Table: ${orderData.tableNo}`, 20, 90);
-    doc.text(`Date: ${new Date().toLocaleString()}`, 20, 100);
-
-    let y = 115;
-    items.forEach((it, idx) => {
-      const line = `${idx + 1}. ${it.title} x ${it.quantity} — ₹${
-        it.price
-      } each`;
-      doc.text(line, 20, y);
-      y += 8;
+    // Create a compact responsive PDF
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: [80, 200], // Receipt size like thermal printer
+      orientation: 'portrait'
     });
 
-    doc.setFontSize(14);
-    doc.text(`Total Paid: ₹${total}`, 20, y + 10);
+    const pageWidth = doc.internal.pageSize.width;
+    let currentY = 5;
+    const margin = 3;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Colors (RGB values for jsPDF)
+    const primaryColor = [0, 0, 0]; // Black
+    const accentColor = [0, 100, 0]; // Dark Green
 
-    const filename = `receipt_${orderId}.pdf`;
+    // Header with Logo and Restaurant Name
+    try {
+      const logoData = await fetchImageAsDataUrl(theme.logoUrl || "/logo.png");
+      if (logoData) {
+        // Center the logo
+        const logoSize = 15;
+        const logoX = (pageWidth - logoSize) / 2;
+        doc.addImage(logoData, "PNG", logoX, currentY, logoSize, logoSize);
+        currentY += logoSize + 2;
+      }
+    } catch (error) {
+      console.log("Logo loading error:", error);
+    }
+
+    // Restaurant Name - Centered
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    const restaurantName = theme.restaurantName || "Restaurant";
+    const nameWidth = doc.getTextWidth(restaurantName);
+    doc.text(restaurantName, (pageWidth - nameWidth) / 2, currentY);
+    currentY += 6;
+
+    // Receipt Title
+    doc.setFontSize(8);
+    const receiptTitle = "ORDER RECEIPT";
+    const titleWidth = doc.getTextWidth(receiptTitle);
+    doc.text(receiptTitle, (pageWidth - titleWidth) / 2, currentY);
+    currentY += 6;
+
+    // Separator Line
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.1);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 4;
+
+    // Order Details - Compact Format
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    
+    const orderInfo = [
+      `Order ID: ${orderId.slice(-8)}`, // Show only last 8 characters
+      `Customer: ${orderData.customerName || 'N/A'}`,
+      `Phone: ${orderData.customerPhone || 'N/A'}`,
+      `Table: ${orderData.tableNo || 'N/A'}`,
+      `${new Date().toLocaleString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`
+    ];
+
+    orderInfo.forEach(line => {
+      doc.text(line, margin, currentY);
+      currentY += 3.5;
+    });
+
+    currentY += 2;
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 4;
+
+    // Items Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.text("ITEM", margin, currentY);
+    doc.text("QTY", pageWidth - 30, currentY);
+    doc.text("AMT", pageWidth - 15, currentY);
+    currentY += 4;
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 2;
+
+    // Items List
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    
+    let subtotal = 0;
+    items.forEach((item) => {
+      const itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+      
+      // Item name (wrap if too long)
+      let itemName = item.title || 'Unknown Item';
+      if (itemName.length > 25) {
+        itemName = itemName.substring(0, 22) + '...';
+      }
+      
+      doc.text(itemName, margin, currentY);
+      currentY += 3;
+      
+      // Quantity and amount on same line
+      doc.text(`${item.quantity} x ₹${item.price}`, margin + 2, currentY);
+      doc.text(`₹${itemTotal}`, pageWidth - 15, currentY);
+      currentY += 4;
+    });
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 3;
+
+    // Total Section
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text("TOTAL:", margin, currentY);
+    doc.text(`₹${total}`, pageWidth - 15, currentY);
+    currentY += 5;
+
+    // Payment Status
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    const paidText = "✓ PAID";
+    const paidWidth = doc.getTextWidth(paidText);
+    doc.text(paidText, (pageWidth - paidWidth) / 2, currentY);
+    currentY += 8;
+
+    // Footer
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    const footerText = "Thank you for dining with us!";
+    const footerWidth = doc.getTextWidth(footerText);
+    doc.text(footerText, (pageWidth - footerWidth) / 2, currentY);
+
+    // Save with clean filename
+    const cleanRestaurantName = theme.restaurantName?.replace(/[^a-zA-Z0-9]/g, '_') || 'Restaurant';
+    const filename = `${cleanRestaurantName}_Receipt_${orderId.slice(-6)}.pdf`;
     doc.save(filename);
   };
 
@@ -439,8 +576,8 @@ Price: ₹${selectedFood.price}`
 
     if (!images || images.length === 0) {
       return (
-        <div className="relative w-full h-44 bg-white/6 rounded-xl flex items-center justify-center">
-          <span className="text-sm text-gray-300">No image</span>
+        <div className="relative w-full h-44 bg-gray-200 rounded-xl flex items-center justify-center">
+          <span className="text-sm text-gray-500">No image</span>
         </div>
       );
     }
@@ -449,30 +586,61 @@ Price: ₹${selectedFood.price}`
     const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
 
     return (
-      <div className="relative w-full h-44 overflow-hidden rounded-xl shadow-lg">
+      <div className="relative w-full h-44 overflow-hidden rounded-xl shadow-lg group">
         <img
           src={images[index]}
-          className="w-full h-full object-cover transition-transform duration-500"
-          alt={`food-${index}`}
+          className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
+          alt={`food-${index + 1}`}
+          onError={(e) => {
+            e.currentTarget.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
+          }}
         />
 
         {images.length > 1 && (
           <>
+            {/* Left arrow button */}
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white px-3 py-1 rounded-full shadow"
-              aria-label="previous image"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white w-8 h-8 rounded-full shadow-lg transition-all duration-200 opacity-60 group-hover:opacity-100 flex items-center justify-center"
+              aria-label="Previous image"
             >
-              ‹
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="15,18 9,12 15,6"></polyline>
+              </svg>
             </button>
+
+            {/* Right arrow button */}
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white px-3 py-1 rounded-full shadow"
-              aria-label="next image"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white w-8 h-8 rounded-full shadow-lg transition-all duration-200 opacity-60 group-hover:opacity-100 flex items-center justify-center"
+              aria-label="Next image"
             >
-              ›
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="9,18 15,12 9,6"></polyline>
+              </svg>
             </button>
+
+            {/* Image indicators */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIndex(i)}
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    i === index ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'
+                  }`}
+                  aria-label={`Go to image ${i + 1}`}
+                />
+              ))}
+            </div>
           </>
+        )}
+
+        {/* Image counter */}
+        {images.length > 1 && (
+          <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+            {index + 1}/{images.length}
+          </div>
         )}
       </div>
     );
@@ -507,17 +675,35 @@ Price: ₹${selectedFood.price}`
   });
 
   return (
-    <main
-      className="min-h-screen relative w-full"
-      style={{
-        backgroundImage: theme.themeImgUrl
-          ? `url(${theme.themeImgUrl})`
-          : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        color: theme.colorPicker,
-      }}
-    >
+    <>
+      {/* Mobile-optimized background styles */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .mobile-bg {
+            background-attachment: scroll !important;
+            background-size: cover !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .mobile-bg {
+            background-attachment: fixed !important;
+          }
+        }
+      `}</style>
+      
+      <main
+        className="min-h-screen relative w-full bg-cover bg-center bg-no-repeat mobile-bg"
+        style={{
+          backgroundImage: theme.themeImgUrl
+            ? `url(${theme.themeImgUrl})`
+            : undefined,
+          color: theme.colorPicker,
+        }}
+      >
+      {/* Mobile responsive overlay for better content readability */}
+      {theme.themeImgUrl && (
+        <div className="absolute inset-0 bg-black/20 sm:bg-black/15 md:bg-black/10 z-0" />
+      )}
       <div className="relative mt-5 z-10 w-full">
         {/* Header */}
         <header className="flex sm:flex-row items-start sm:items-center justify-between mb-6">
@@ -589,26 +775,28 @@ Price: ₹${selectedFood.price}`
 
               {/* Dropdown menu */}
               {isMobileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg flex flex-col z-20">
+                <div className="absolute right-0 top-full mt-2 w-44 bg-white border rounded-lg shadow-lg flex flex-col z-20 min-w-max">
                   <button
-                    onClick={() =>
+                    onClick={() => {
                       router.push(
                         `/RESTAURANT/${restaurantId}/customerMenu/order-status?table=${dbTableNo}`
-                      )
-                    }
-                    className="px-4 py-2 text-left hover:bg-gray-100"
+                      );
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="px-4 py-3 text-left hover:bg-gray-100 text-sm whitespace-nowrap"
                   >
                     Order Status
                   </button>
                   <button
-                    onClick={() =>
-                      router.push(`/RESTAURANT/${restaurantId}/customerMenu/cart?table=${dbTableNo}`)
-                    }
-                    className="px-4 py-2 text-left hover:bg-gray-100 flex items-center justify-between"
+                    onClick={() => {
+                      router.push(`/RESTAURANT/${restaurantId}/customerMenu/cart?table=${dbTableNo}`);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="px-4 py-3 text-left hover:bg-gray-100 flex items-center justify-between text-sm whitespace-nowrap"
                   >
                     <span>Cart</span>
                     {cartCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                      <span className="bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full ml-2">
                         {cartCount}
                       </span>
                     )}
@@ -620,17 +808,17 @@ Price: ₹${selectedFood.price}`
         </header>
 
         {/* Hero / Video banner */}
-        <section className="mb-6">
-          <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
+        <section className="mb-6 mx-2 sm:mx-0">
+          <div className="rounded-2xl overflow-hidden shadow-xl border border-white/20 bg-white/10 backdrop-blur-sm">
             <video
               src={theme.seasonalVideoUrl}
               autoPlay
               muted
               loop
               playsInline
-              className="w-full h-[70vh] object-cover"
+              className="w-full h-[60vh] sm:h-[70vh] object-cover"
             />
-            <div className="p-4 bg-gradient-to-t from-gray-100 to-transparent ml-3">
+            <div className="p-4 bg-gradient-to-t from-white/90 to-transparent ml-3">
               <h2 className="text-black text-xl sm:text-2xl font-bold">
                 Seasonal Specials
               </h2>
@@ -642,7 +830,7 @@ Price: ₹${selectedFood.price}`
         </section>
 
         {/* Search + Filters */}
-        <section className="mb-6">
+        <section className="mb-6 mx-2 sm:mx-0">
           <div className="flex flex-col gap-3">
             <div className="w-full">
               <div className="relative">
@@ -650,7 +838,7 @@ Price: ₹${selectedFood.price}`
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search dishes, e.g. Pizza, Pasta..."
-                  className="w-full rounded-2xl py-3 px-4 bg-gray-100 text-black placeholder:text-black/50 shadow"
+                  className="w-full rounded-2xl py-3 px-4 bg-white/90 backdrop-blur-sm text-black placeholder:text-black/50 shadow-lg border border-white/30"
                 />
                 {search && (
                   <button
@@ -666,10 +854,10 @@ Price: ₹${selectedFood.price}`
             <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
               <button
                 onClick={() => setActiveFilter("ALL")}
-                className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow ${
+                className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg backdrop-blur-sm ${
                   activeFilter === "ALL"
-                    ? "bg-orange-500 text-black"
-                    : "bg-gray-200 text-black"
+                    ? "bg-orange-500 text-black border border-orange-600"
+                    : "bg-white/90 text-black border border-white/30"
                 }`}
               >
                 ALL
@@ -679,10 +867,10 @@ Price: ₹${selectedFood.price}`
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
-                  className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow ${
+                  className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg backdrop-blur-sm ${
                     activeFilter === cat
-                      ? "bg-orange-500 text-black"
-                      : "bg-gray-200 text-black"
+                      ? "bg-orange-500 text-black border border-orange-600"
+                      : "bg-white/90 text-black border border-white/30"
                   }`}
                 >
                   {cat}
@@ -693,9 +881,9 @@ Price: ₹${selectedFood.price}`
         </section>
 
         {/* Menu Grid */}
-        <section className="mb-8">
+        <section className="mb-8 mx-2 sm:mx-0">
           <div className="flex justify-center items-center ">
-            <span className="text-sm text-black/70 font-medium mb-4">
+            <span className="text-sm text-black/70 font-medium mb-4" style={{ color: theme.colorPicker }} >
               Digital Menu
             </span>
           </div>
@@ -708,11 +896,24 @@ Price: ₹${selectedFood.price}`
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredFoods.map((food) => {
-                const imagesArray = Array.isArray(food.imageUrl)
-                  ? (food.imageUrl as string[])
-                  : food.imageUrl
-                  ? [food.imageUrl as string]
-                  : ["https://via.placeholder.com/300"];
+                // Handle multiple image formats
+                let imagesArray: string[] = [];
+                
+                if (Array.isArray(food.imageUrl)) {
+                  // Already an array of images
+                  imagesArray = (food.imageUrl as string[]).filter(url => url && url.trim() !== '');
+                } else if (food.imageUrl && typeof food.imageUrl === 'string') {
+                  // Single image URL
+                  imagesArray = [food.imageUrl];
+                } else {
+                  // Fallback to placeholder
+                  imagesArray = ["https://via.placeholder.com/300x200?text=No+Image"];
+                }
+                
+                // Ensure we have at least one image
+                if (imagesArray.length === 0) {
+                  imagesArray = ["https://via.placeholder.com/300x200?text=No+Image"];
+                }
 
                 const isExpanded = expandedCards[food.id] || false;
                 const description = food.description || "";
@@ -722,13 +923,13 @@ Price: ₹${selectedFood.price}`
                 return (
                   <article
                     key={food.id}
-                    className="bg-gray-50 backdrop-blur-md rounded-2xl border border-gray-200 overflow-hidden shadow-lg flex flex-col"
+                    className="bg-white/90 sm:bg-white/85 backdrop-blur-md rounded-2xl border border-gray-200 overflow-hidden shadow-lg flex flex-col"
                   >
                     <Card className="bg-transparent shadow-none rounded-none p-0 flex flex-col">
                       <CardContent className="p-4 flex flex-col gap-3">
                         {/* Fixed height image container */}
                         <div className="h-44 flex-shrink-0">
-                          <ImageSlider images={imagesArray as string[]} />
+                          <ImageSlider images={imagesArray} />
                         </div>
 
                         {/* Price and Category */}
@@ -957,5 +1158,6 @@ Price: ₹${selectedFood.price}`
         </Dialog>
       </div>
     </main>
+    </>
   );
 }

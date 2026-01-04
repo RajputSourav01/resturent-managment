@@ -100,6 +100,9 @@ export default function StaffLoginPage({ params }: StaffLoginPageProps) {
         mobile: staffMember.mobile
       }));
       
+      // Clear form fields
+      setFormData({ mobile: '', password: '' });
+      
       // Redirect to kitchen dashboard
       router.push(`/RESTAURANT/${restaurantId}/KitchenDash`);
       

@@ -14,7 +14,7 @@ import {
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -124,13 +124,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:w-64 md:flex-col border-r bg-background h-screen sticky top-0">
+      <aside className="hidden md:flex md:w-64 md:flex-col border-r bg-background h-screen sticky top-0 z-10">
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
         <SheetContent side="left" className="p-0 w-64">
+          <SheetTitle className="sr-only">Admin Navigation Menu</SheetTitle>
           <SidebarContent />
         </SheetContent>
       </Sheet>

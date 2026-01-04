@@ -74,8 +74,33 @@ export default function AddStaffForm() {
       return;
     }
 
-    if (!fullName.trim() || !mobile.trim()) {
-      setMessage("Name and Mobile are required");
+    if (!fullName.trim()) {
+      setMessage("❌ Full Name is required");
+      return;
+    }
+
+    if (!address.trim()) {
+      setMessage("❌ Address is required");
+      return;
+    }
+
+    if (!mobile.trim()) {
+      setMessage("❌ Mobile number is required");
+      return;
+    }
+
+    if (!aadhaar.trim()) {
+      setMessage("❌ Aadhaar number is required");
+      return;
+    }
+
+    if (!designation.trim()) {
+      setMessage("❌ Designation is required");
+      return;
+    }
+
+    if (!imageFile && !editingId) {
+      setMessage("❌ Staff image is required");
       return;
     }
 
@@ -108,8 +133,20 @@ export default function AddStaffForm() {
         await setDoc(ref, updateData, { merge: true });
         
         setMessage("✅ Staff updated successfully");
-        resetForm();
+        // Clear form immediately
+        setFullName('');
+        setAddress('');
+        setMobile('');
+        setAadhaar('');
+        setDesignation('');
+        setPassword('');
+        setImageFile(null);
+        setPreview(null);
+        setEditingId(null);
         fetchStaff();
+        
+        // Clear message after delay
+        setTimeout(() => setMessage(null), 3000);
       } catch (error) {
         setMessage("❌ Failed to update staff");
         console.error("Update failed:", error);
@@ -121,7 +158,7 @@ export default function AddStaffForm() {
 
     // Add new staff
     if (!password.trim()) {
-      setMessage("Password is required for new staff");
+      setMessage("❌ Password is required for new staff");
       return;
     }
 
@@ -149,8 +186,20 @@ export default function AddStaffForm() {
         setMessage(data?.error || "Upload failed");
       } else {
         setMessage("✅ Staff added successfully");
-        resetForm();
+        // Clear form immediately
+        setFullName('');
+        setAddress('');
+        setMobile('');
+        setAadhaar('');
+        setDesignation('');
+        setPassword('');
+        setImageFile(null);
+        setPreview(null);
+        setEditingId(null);
         fetchStaff();
+        
+        // Clear message after delay
+        setTimeout(() => setMessage(null), 3000);
       }
 
     } finally {
@@ -218,48 +267,54 @@ export default function AddStaffForm() {
           {editingId ? 'Edit Staff Member' : 'Add New Staff Member'}
         </h3>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} key={editingId || 'new'}>
         <input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          placeholder="Full Name"
+          placeholder="Full Name *"
           className="border p-2 w-full mb-3"
+          required
         />
 
         <input
           value={mobile}
           onChange={(e) => setMobile(e.target.value)}
-          placeholder="Mobile"
+          placeholder="Mobile Number *"
           className="border p-2 w-full mb-3"
+          required
         />
 
         <textarea
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Address"
+          placeholder="Address *"
           className="border p-2 w-full mb-3"
+          required
         />
 
         <input
           value={aadhaar}
           onChange={(e) => setAadhaar(e.target.value)}
-          placeholder="Aadhaar"
+          placeholder="Aadhaar Number *"
           className="border p-2 w-full mb-3"
+          required
         />
 
         <input
           value={designation}
           onChange={(e) => setDesignation(e.target.value)}
-          placeholder="Designation"
+          placeholder="Designation *"
           className="border p-2 w-full mb-3"
+          required
         />
 
         <input
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
+          placeholder={editingId ? "Password (leave blank to keep current)" : "Password *"}
           type="password"
           className="border p-2 w-full mb-3"
+          required={!editingId}
         />
 
         <input
@@ -267,7 +322,11 @@ export default function AddStaffForm() {
           accept="image/*"
           onChange={onFileChange}
           className="border p-2 w-full mb-3"
+          required={!editingId}
         />
+        {!editingId && (
+          <p className="text-xs text-gray-600 mb-3">* Staff image is required for new staff</p>
+        )}
 
         {preview && <img src={preview} className="h-24 rounded mb-3" />}
 
@@ -300,23 +359,42 @@ export default function AddStaffForm() {
         <h3 className="text-xl font-semibold mb-4">Staff List</h3>
 
         {filteredStaff.map((staff) => (
-          <div key={staff.id} className="border p-3 rounded mb-3 flex justify-between items-center">
-            <div>
-              <p className="font-bold">{staff.fullName}</p>
-              <p className="text-sm text-gray-600">{staff.mobile}</p>
-              <p className="text-sm text-gray-600">{staff.designation}</p>
+          <div key={staff.id} className="border p-3 rounded mb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              {/* Staff Image - Mobile Responsive */}
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                {staff.imageUrl ? (
+                  <img 
+                    src={staff.imageUrl} 
+                    alt={staff.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    👤
+                  </div>
+                )}
+              </div>
+              
+              {/* Staff Info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm sm:text-base truncate">{staff.fullName}</p>
+                <p className="text-xs sm:text-sm text-gray-600">{staff.mobile}</p>
+                <p className="text-xs sm:text-sm text-gray-600">{staff.designation}</p>
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* Action Buttons */}
+            <div className="flex gap-2 self-start sm:self-center">
               <button
-                className="bg-blue-600 text-white px-3 py-1 rounded"
+                className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
                 onClick={() => startEdit(staff)}
               >
                 Edit
               </button>
 
               <button
-                className="bg-red-600 text-white px-3 py-1 rounded"
+                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
                 onClick={() => deleteStaff(staff.id)}
               >
                 Delete

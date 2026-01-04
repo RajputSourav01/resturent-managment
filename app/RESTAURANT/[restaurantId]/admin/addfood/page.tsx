@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -47,6 +48,8 @@ interface AddFoodFormProps {
 
 export default function AddFoodForm({ params }: AddFoodFormProps) {
   const { restaurantId } = use(params); // ⭐ GET TENANT ID
+  const searchParams = useSearchParams();
+  const foodId = searchParams.get('id'); // ⭐ GET FOOD ID FOR EDITING
 
   const [formData, setFormData] = useState<FoodFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
@@ -58,6 +61,7 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
     useState<string[]>(defaultCategories);
 
   const [hasScrolled, setHasScrolled] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   /* ==========================================
      🔥 FETCH FOODS FROM THIS RESTAURANT ONLY
@@ -91,6 +95,15 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
 
     return () => unsubscribe();
   }, [restaurantId]);
+
+  /* ==========================================
+     🔥 AUTO-LOAD FOOD FOR EDITING FROM URL
+     ========================================== */
+  useEffect(() => {
+    if (foodId && foods[foodId] && !editingId) {
+      startEdit(foodId, foods[foodId]);
+    }
+  }, [foodId, foods, editingId]);
 
   /* ==========================================
      INPUT HANDLERS
@@ -159,12 +172,16 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
     editingId
   );
 
+  const validImages = formData.imageUrl.filter(url => url && url.trim() !== '');
+  const imagesToSave = validImages.length > 0 ? validImages : ['https://via.placeholder.com/300'];
+
   await setDoc(ref, {
     name: formData.title,
     description: formData.description,
     price: formData.price,
     category: formData.category,
-    image: formData.imageUrl[0] || 'https://via.placeholder.com/300',
+    image: imagesToSave[0], // Keep first image for backward compatibility
+    images: imagesToSave, // Store all images
     stock: 100,
     isAvailable: true,
     updatedAt: new Date(),
@@ -174,12 +191,16 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
   setEditingId(null);
 }
  else {
+        const validImages = formData.imageUrl.filter(url => url && url.trim() !== '');
+        const imagesToSave = validImages.length > 0 ? validImages : ['https://via.placeholder.com/300'];
+
         await addDoc(foodsRef, {
           name: formData.title,
           description: formData.description,
           price: formData.price,
           category: formData.category,
-          image: formData.imageUrl[0] || 'https://via.placeholder.com/300',
+          image: imagesToSave[0], // Keep first image for backward compatibility
+          images: imagesToSave, // Store all images
           stock: 100,
           isAvailable: true,
           createdAt: new Date(),
@@ -215,16 +236,69 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
      START EDIT
      ========================================== */
   const startEdit = (id: string, data: any) => {
+    console.log("📝 Starting edit for food:", id, data);
     setEditingId(id);
 
+    let imageData: string[] = [''];
+    
+    // First try to get images from 'images' field (new multiple images format)
+    if (Array.isArray(data.images) && data.images.length > 0) {
+      imageData = data.images.filter((url: string) => url && url.trim() !== '');
+    }
+    // Fallback to 'imageUrl' field if available
+    else if (Array.isArray(data.imageUrl)) {
+      imageData = data.imageUrl.filter((url: string) => url && url.trim() !== '');
+    }
+    else if (data.imageUrl && typeof data.imageUrl === 'string') {
+      imageData = [data.imageUrl];
+    }
+    // Fallback to 'image' field (backward compatibility)
+    else if (Array.isArray(data.image)) {
+      imageData = data.image.filter((url: string) => url && url.trim() !== '');
+    }
+    else if (data.image && typeof data.image === 'string') {
+      imageData = [data.image];
+    }
+    
+    // If no valid images found, use empty array with one empty string
+    if (imageData.length === 0) {
+      imageData = [''];
+    }
+
+    console.log("🖼️ Image data processed:", imageData);
+
     setFormData({
-      title: data.name || data.title,
-      price: data.price,
-      category: data.category,
+      title: data.name || data.title || '',
+      price: data.price || 0,
+      category: data.category || 'Main Course',
       ingredients: data.ingredients || '',
-      description: data.description,
-      imageUrl: Array.isArray(data.image) ? data.image : [data.image || data.imageUrl],
+      description: data.description || '',
+      imageUrl: imageData,
     });
+
+    console.log("✅ Form data set for editing");
+  };
+
+  /* ==========================================
+     CANCEL EDIT
+     ========================================== */
+  const cancelEdit = () => {
+    console.log("❌ Cancel edit clicked");
+    setEditingId(null);
+    setFormData(initialFormData);
+    setMessage('✅ Edit cancelled, form reset to add new food');
+    console.log("🔄 Form reset to initial state");
+    
+    // Clear message after 2 seconds
+    setTimeout(() => setMessage(''), 2000);
+    
+    // Scroll to form
+    if (formRef.current) {
+      formRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   };
 
   /* ==========================================
@@ -263,9 +337,9 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
 
         {/* -------- FORM -------- */}
-        <div className="bg-white shadow-sm rounded-lg border p-4 sm:p-6">
+        <div ref={formRef} className="bg-white shadow-sm rounded-lg border p-4 sm:p-6">
           <h3 className="text-xl sm:text-2xl font-semibold mb-6">
-            {editingId ? 'Edit Food Item' : 'Add New Food Item'}
+            {editingId ? `Edit Food Item (ID: ${editingId})` : 'Add New Food Item'}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -337,18 +411,14 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
 
               <div>
                 <label className="block text-sm mb-2">Category</label>
-                <select
+                <input
+                  type="text"
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
+                  placeholder="Enter food category (e.g., Main Course, Appetizer, Dessert)"
                   className="w-full p-3 border rounded-lg"
-                >
-                  {availableCategories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 
@@ -389,17 +459,33 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg"
-            >
-              {loading
-                ? 'Saving...'
-                : editingId
-                ? 'Update Food'
-                : 'Add Food'}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg"
+              >
+                {loading
+                  ? 'Saving...'
+                  : editingId
+                  ? 'Update Food'
+                  : 'Add Food'}
+              </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("🔘 Cancel Edit button clicked, editingId:", editingId);
+                    cancelEdit();
+                  }}
+                  disabled={loading}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg transition-colors"
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -458,7 +544,12 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
               {foodsByCategory(selectedCategory).map(([id, food]: any) => {
-                const total = food.imageUrl?.length || 1;
+                // Handle both imageUrl array and single image field safely
+                const images = Array.isArray(food.imageUrl) ? food.imageUrl : 
+                              food.imageUrl ? [food.imageUrl] :
+                              food.image ? [food.image] : 
+                              ['https://via.placeholder.com/300'];
+                const total = images.length;
                 const index = sliderIndex[id] ?? 0;
 
                 return (
@@ -469,7 +560,7 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
                     {/* IMAGE SLIDER */}
                     <div className="aspect-video relative overflow-hidden rounded-t-lg">
                       <img
-                        src={food.imageUrl[index]}
+                        src={images[index] || 'https://via.placeholder.com/300'}
                         className="w-full h-full object-cover"
                       />
 
@@ -493,7 +584,7 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
 
                     <div className="p-4">
                       <h3 className="font-semibold text-lg">
-                        {food.title}
+                        {food.name || food.title}
                       </h3>
 
                       <p className="text-blue-600 font-bold text-lg mb-2">
@@ -516,15 +607,18 @@ export default function AddFoodForm({ params }: AddFoodFormProps) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
+                            console.log("🔄 Edit button clicked for food:", id, food);
                             startEdit(id, food);
                             setTimeout(() => {
-                              window.scrollTo({
-                                top: 0,
-                                behavior: 'smooth',
-                              });
+                              if (formRef.current) {
+                                formRef.current.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'start'
+                                });
+                              }
                             }, 200);
                           }}
-                          className="flex-1 px-3 py-2 bg-yellow-500 text-white rounded-md"
+                          className="flex-1 px-3 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
                         >
                           Edit
                         </button>

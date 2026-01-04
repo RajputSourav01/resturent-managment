@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import restaurantService, { Table } from '@/lib/restaurant-service';
-import { User, Hash, Pencil, Trash2 } from 'lucide-react';
+import { Hash, Pencil, Trash2 } from 'lucide-react';
 import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 
 import { QRCodeCanvas } from "qrcode.react";
@@ -24,7 +24,6 @@ export default function AddTablePage() {
   const { restaurantId } = useParams();   // ⭐ GET RESTAURANT ID FROM URL
 
   const [formData, setFormData] = useState({
-    email: '',
     tableNo: '',
   });
 
@@ -65,8 +64,8 @@ export default function AddTablePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.tableNo) {
-      alert('All fields are required');
+    if (!formData.tableNo) {
+      alert('Table number is required');
       return;
     }
 
@@ -103,7 +102,7 @@ export default function AddTablePage() {
         setSuccess("Table added ✅");
       }
 
-      setFormData({ email: '', tableNo: '' });
+      setFormData({ tableNo: '' });
       setEditId(null);
       loadTables();
     } catch (error) {
@@ -117,7 +116,6 @@ export default function AddTablePage() {
   const handleEdit = (item: TableUser) => {
     setEditId(item.id);
     setFormData({
-      email: item.username,
       tableNo: item.tableNo,
     });
   };
@@ -159,7 +157,7 @@ export default function AddTablePage() {
         {/* Form */}
         <div className="bg-white shadow-xl rounded-2xl w-full max-w-md p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-            Add / Edit Table Login
+            Add / Edit Table
           </h1>
 
           {success && (
@@ -170,18 +168,6 @@ export default function AddTablePage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <User className="absolute left-3 top-3 text-gray-400" size={18} />
-              <input
-                type="text"
-                name="email"
-                placeholder="username"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 border rounded-lg"
-              />
-            </div>
-
-            <div className="relative">
               <Hash className="absolute left-3 top-3 text-gray-400" size={18} />
               <input
                 type="text"
@@ -190,6 +176,7 @@ export default function AddTablePage() {
                 value={formData.tableNo}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 border rounded-lg"
+                required
               />
             </div>
 
@@ -202,7 +189,7 @@ export default function AddTablePage() {
                 ? "Saving..."
                 : editId
                 ? "Update Table"
-                : "Create Table Login"}
+                : "Create Table"}
             </button>
           </form>
         </div>
@@ -212,7 +199,7 @@ export default function AddTablePage() {
           <table className="min-w-full border-collapse text-sm">
             <thead className="bg-gray-200 text-gray-700 uppercase text-xs">
               <tr>
-                <th className="p-3 border">Username</th>
+                
                 <th className="p-3 border">Table No</th>
                 <th className="p-3 border text-center">Actions</th>
                 <th className="p-3 border text-center">QR_CODE</th>
@@ -221,7 +208,7 @@ export default function AddTablePage() {
             <tbody>
               {tables.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="p-3 border">{item.username}</td>
+                 
                   <td className="p-3 border">{item.tableNo}</td>
 
                   <td className="p-3 border text-center space-x-3">

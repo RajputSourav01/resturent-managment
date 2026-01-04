@@ -9,6 +9,7 @@ import {
   orderBy,
   updateDoc,
   doc,
+  getDoc,
 } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,40 @@ export default function KitchenDashboard() {
       router.replace('/KitchenDash');
       return;
     }
+
+    // Real-time listener for restaurant blocking status
+    const unsubscribeBlocking = onSnapshot(
+      doc(db, "restaurants", restaurantId),
+      async (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          if (data.isBlocked) {
+            // Restaurant has been blocked, logout immediately
+            alert('Your restaurant has been blocked by Super Admin. You will be logged out.');
+            
+            // Use Firebase signOut to properly clear authentication
+            try {
+              const { signOut } = await import('firebase/auth');
+              const { auth } = await import('@/lib/firebase');
+              await signOut(auth);
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
+            
+            // Clear all localStorage data
+            localStorage.clear();
+            
+            // Redirect to home page
+            router.push('/');
+            return;
+          }
+        }
+      },
+      (error) => {
+        console.error("Error listening to restaurant status:", error);
+      }
+    );
+
     const q = query(collection(db, "restaurants", restaurantId, "orders"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       const list: Order[] = snap.docs.map((d) => ({
@@ -57,7 +92,10 @@ export default function KitchenDashboard() {
       setOrders(list);
       setLoading(false);
     });
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubscribeBlocking();
+    };
   }, [router]);
 
   const updateStatus = async (id: string, status: string) => {
@@ -140,11 +178,13 @@ export default function KitchenDashboard() {
 
                   <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border-t border-white/10">
                     {o.imageUrl && (
-                      <img
-                        src={o.imageUrl}
-                        alt={o.title}
-                        className="w-full sm:w-24 h-24 object-cover rounded-xl"
-                      />
+                      <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0">
+                        <img
+                          src={o.imageUrl}
+                          alt={o.title}
+                          className="w-full h-full object-cover rounded-xl shadow-md"
+                        />
+                      </div>
                     )}
                     <div className="flex-1 flex flex-col gap-1">
                       <p className="font-semibold text-gray-300 underline">

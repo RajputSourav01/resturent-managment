@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import restaurantService from '@/lib/restaurant-service';
 import { Check, ArrowRight, Loader2, Crown, Star, Zap, CreditCard, ShieldCheck } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 interface SubscriptionPlan {
   id: string;
@@ -72,6 +74,11 @@ export default function RestaurantOnboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -227,13 +234,39 @@ export default function RestaurantOnboarding() {
     
     setLoading(true);
     try {
-      // Create restaurant in Firestore
+      // Check for duplicate restaurant email
+      const restaurantEmailExists = await restaurantService.checkRestaurantEmailExists(formData.email);
+      if (restaurantEmailExists) {
+        setErrors({ submit: 'Restaurent already registered with this email' });
+        setLoading(false);
+        return;
+      }
+
+      // Check for duplicate admin email
+      const adminEmailExists = await restaurantService.checkAdminEmailExists(formData.adminEmail);
+      if (adminEmailExists) {
+        setErrors({ submit: 'Admin already register with this email' });
+        setLoading(false);
+        return;
+      }
+      
+      // Get selected plan details
+      const selectedPlanDetails = subscriptionPlans.find(p => p.id === selectedPlan);
+      
+      // Create restaurant in Firestore with plan information
       const restaurantId = await restaurantService.createRestaurant({
         name: formData.restaurantName,
         address: formData.address,
         phone: formData.phone,
         email: formData.email,
         description: formData.description,
+        plan: selectedPlanDetails ? {
+          id: selectedPlanDetails.id,
+          name: selectedPlanDetails.name,
+          price: selectedPlanDetails.price,
+          duration: selectedPlanDetails.duration,
+          purchasedAt: new Date()
+        } : undefined,
         isActive: true
       });
 
@@ -242,7 +275,7 @@ export default function RestaurantOnboarding() {
         email: formData.adminEmail,
         password: formData.adminPassword, // In production, hash this password
         restaurantId: restaurantId,
-        name: formData.restaurantName + ' Admin',
+        name: formData.adminName || (formData.restaurantName + ' Admin'),
         isActive: true
       });
 
@@ -250,25 +283,45 @@ export default function RestaurantOnboarding() {
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         formData.adminEmail, 
-        formData.adminPassword + '_admin'
+        formData.adminPassword
       );
 
-      // Store admin session
-      localStorage.setItem(`admin_restaurant`, restaurantId);
+      // Store admin session for auto-login
+      localStorage.setItem('admin_restaurant', restaurantId);
       localStorage.setItem('admin', 'true');
       localStorage.setItem('subscription_plan', selectedPlan);
 
-      // Redirect to admin dashboard
-      router.push(`/RESTAURANT/${restaurantId}/admin/admindash`);
+      // Clear all form fields
+      setFormData({
+        restaurantName: '',
+        address: '',
+        phone: '',
+        email: '',
+        description: '',
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: '',
+        adminName: '',
+        adminEmail: '',
+        adminPassword: '',
+        confirmPassword: ''
+      });
+      setSelectedPlan('professional');
+
+      // Redirect to admin dashboard with a small delay to ensure auth state is set
+      setTimeout(() => {
+        router.push(`/RESTAURANT/${restaurantId}/admin/admindash`);
+      }, 100);
       
     } catch (error: any) {
       console.error('Registration error:', error);
       
       let errorMessage = 'Registration failed. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'An account with this email already exists.';
+        errorMessage = 'इस ईमेल के साथ पहले से एक खाता मौजूद है।';
       } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak. Please choose a stronger password.';
+        errorMessage = 'पासवर्ड बहुत कमजोर है। कृपया एक मजबूत पासवर्ड चुनें।';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -319,7 +372,7 @@ export default function RestaurantOnboarding() {
           {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number *
@@ -630,97 +683,121 @@ export default function RestaurantOnboarding() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            {[1, 2, 3, 4].map((stepNum) => (
-              <React.Fragment key={stepNum}>
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step >= stepNum
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {stepNum}
-                </div>
-                {stepNum < 4 && (
+    <div className="min-h-screen bg-gray-50 flex flex-col overflow-x-hidden">
+      <div className="flex-shrink-0">
+        <Navbar />
+      </div>
+      
+      <div className="flex-1 py-6 sm:py-8 lg:py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-blue-600 hover:underline font-medium mb-6 text-sm sm:text-base"
+          >
+            ← Back
+          </button>
+          
+          {/* Progress Steps */}
+          <div className="mb-6 sm:mb-8 lg:mb-10">
+            <div className="flex items-center justify-center px-2 sm:px-4">
+              {[1, 2, 3, 4].map((stepNum) => (
+                <React.Fragment key={stepNum}>
                   <div
-                    className={`w-12 h-1 mx-2 ${
-                      step > stepNum ? 'bg-blue-600' : 'bg-gray-200'
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 ${
+                      step >= stepNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-600'
                     }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+                  >
+                    {stepNum}
+                  </div>
+                  {stepNum < 4 && (
+                    <div
+                      className={`h-1 mx-1 sm:mx-2 flex-1 max-w-8 sm:max-w-12 lg:max-w-16 ${
+                        step > stepNum ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+            <div className="flex justify-between items-center mt-3 text-xs sm:text-sm text-gray-600 px-2 sm:px-4">
+              <span className="text-center font-medium">Restaurant</span>
+              <span className="text-center font-medium">Plan</span>
+              <span className="text-center font-medium">Payment</span>
+              <span className="text-center font-medium">Admin</span>
+            </div>
           </div>
-          <div className="flex justify-between mt-2 text-sm text-gray-600 max-w-lg mx-auto">
-            <span>Restaurant</span>
-            <span>Plan</span>
-            <span>Payment</span>
-            <span>Admin</span>
+
+          {/* Form Content */}
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
+            <div className="w-full">
+              {step === 1 && renderStep1()}
+              {step === 2 && renderStep2()}
+              {step === 3 && renderStep3()}
+              {step === 4 && renderStep4()}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between pt-6 mt-6 border-t border-gray-200 gap-3 sm:gap-4">
+              <button
+                onClick={handleBack}
+                disabled={step === 1}
+                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors ${
+                  step === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Back
+              </button>
+
+              {step < 4 ? (
+                <button
+                  onClick={handleNext}
+                  disabled={step === 3 && paymentProcessing}
+                  className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  {step === 3 && paymentProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="hidden sm:inline">Processing Payment...</span>
+                      <span className="sm:hidden">Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{step === 3 ? 'Pay & Continue' : 'Next'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="hidden sm:inline">Creating Account...</span>
+                      <span className="sm:hidden">Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Complete Registration</span>
+                      <span className="sm:hidden">Complete</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Form Content */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-          {step === 4 && renderStep4()}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-6 mt-6 border-t border-gray-200">
-            <button
-              onClick={handleBack}
-              disabled={step === 1}
-              className={`px-6 py-2 rounded-lg font-medium ${
-                step === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Back
-            </button>
-
-            {step < 4 ? (
-              <button
-                onClick={handleNext}
-                disabled={step === 3 && paymentProcessing}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-              >
-                {step === 3 && paymentProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    {step === 3 ? 'Pay & Continue' : 'Next'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Account...
-                  </>
-                ) : (
-                  'Complete Registration'
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+      </div>
+      
+      <div className="flex-shrink-0">
+        <Footer />
       </div>
     </div>
   );

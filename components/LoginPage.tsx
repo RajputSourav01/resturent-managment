@@ -47,14 +47,25 @@ export default function LoginPage() {
         return;
       }
 
+      // Check if restaurant is blocked
+      try {
+        const restaurantDoc = await restaurantService.getRestaurant(adminData.restaurantId);
+        if (restaurantDoc?.isBlocked) {
+          setError('Restaurant is temporarily blocked. Please contact support for assistance.');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking restaurant status:', error);
+      }
+
       // Get or create Firebase Auth user for this admin
       let userCredential;
       try {
-        userCredential = await signInWithEmailAndPassword(auth, email, password + '_admin');
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
       } catch (authError: any) {
         if (authError.code === 'auth/user-not-found') {
           // Create Firebase auth user if doesn't exist
-          userCredential = await createUserWithEmailAndPassword(auth, email, password + '_admin');
+          userCredential = await createUserWithEmailAndPassword(auth, email, password);
         } else {
           throw authError;
         }
@@ -65,6 +76,11 @@ export default function LoginPage() {
       localStorage.setItem('admin_restaurant', adminData.restaurantId);
       
       await refreshUserData();
+      
+      // Clear form fields
+      setEmail('');
+      setPassword('');
+      setRestaurantId('');
       
       // Redirect will be handled by the parent component
     } catch (error: any) {
@@ -128,6 +144,11 @@ export default function LoginPage() {
 
       await refreshUserData();
       
+      // Clear form fields
+      setMobile('');
+      setPassword('');
+      setRestaurantId('');
+      
       // Redirect will be handled by the parent component
     } catch (error: any) {
       console.error('Staff login error:', error);
@@ -185,15 +206,16 @@ export default function LoginPage() {
         <form onSubmit={handleAdminLogin} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Restaurant Email
+              Admin Email(CASE SENSITIVE)
             </label>
             <input
               type="email"
               id="email"
+              
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              placeholder="admin@restaurant.com"
+              placeholder="admin@example.com"
               required
             />
           </div>

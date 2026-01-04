@@ -25,6 +25,11 @@ const AdminLoginForm: React.FC<{ params: Promise<{ restaurantId: string }> }> = 
 
       // 2. Login successful, navigate to admin dashboard
       localStorage.setItem("admin", "true");
+      
+      // Clear form fields
+      setEmail('');
+      setPassword('');
+      
       router.push(`/RESTAURANT/${restaurantId}/admin/admindash`); 
 
     } catch (err: any) {

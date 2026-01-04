@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, getDocs } from "firebase/firestore";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -28,6 +28,15 @@ type CartItem = {
   quantity: number;
 };
 
+// Theme Settings Type
+type ThemeSettings = {
+  themeImgUrl?: string;
+  colorPicker?: string;
+  restaurantName?: string;
+  logoUrl?: string;
+  seasonalVideoUrl?: string;
+};
+
 export default function CartPage({ params }: { params: Promise<{ restaurantId: string }> }) {
   const { restaurantId } = use(params);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -44,8 +53,38 @@ export default function CartPage({ params }: { params: Promise<{ restaurantId: s
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerPopup, setCustomerPopup] = useState(false);
 
-  // Restaurant Logo
-  const restaurantLogo = "/logo.png"; // CHANGE THIS
+  // Theme Settings State
+  const [theme, setTheme] = useState<ThemeSettings>({
+    themeImgUrl: "",
+    colorPicker: "#000000",
+    restaurantName: "Restaurant",
+    logoUrl: "/logo.png",
+    seasonalVideoUrl: "",
+  });
+
+  // Load theme settings
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const snap = await getDocs(collection(db, "restaurants", restaurantId, "themeSettings"));
+        if (!snap.empty) {
+          const data = snap.docs[0].data() as ThemeSettings;
+          setTheme({
+            themeImgUrl: data.themeImgUrl || "",
+            colorPicker: data.colorPicker || "#000000",
+            restaurantName: data.restaurantName || "Restaurant",
+            logoUrl: data.logoUrl || "/logo.png",
+            seasonalVideoUrl: data.seasonalVideoUrl || "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load theme settings:", err);
+      }
+    };
+    if (restaurantId) {
+      loadTheme();
+    }
+  }, [restaurantId]);
 
   useEffect(() => {
     const cartKey = `cart_table_${tableNo || "unknown"}`;
@@ -63,74 +102,172 @@ export default function CartPage({ params }: { params: Promise<{ restaurantId: s
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // -----------------------------
-  // PDF GENERATOR (jsPDF)
+  // COMPACT MOBILE-RESPONSIVE PDF GENERATOR 
   // -----------------------------
   const generatePDF = async () => {
-  const doc = new jsPDF({
-    unit: "pt",
-    format: "a4",
-  });
+    // Create a compact responsive PDF like thermal receipt
+    const doc = new jsPDF({
+      unit: "mm",
+      format: [80, 250], // Thermal receipt size - mobile friendly
+      orientation: "portrait",
+    });
 
-  // Convert logo to Base64
-  const toBase64 = (url: string) =>
-    fetch(url)
-      .then((res) => res.blob())
-      .then(
-        (blob) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          })
-      );
+    const pageWidth = doc.internal.pageSize.width;
+    let currentY = 5;
+    const margin = 3;
 
-  try {
-    const logoBase64 = await toBase64(restaurantLogo);
-    doc.addImage(logoBase64, "PNG", 200, 20, 150, 80);
-  } catch (e) {
-    console.log("Logo error:", e);
-  }
+    // Colors
+    const primaryColor = [0, 0, 0]; // Black
+    const accentColor = [0, 100, 0]; // Dark Green
 
-  // Use standard font and UTF-8 safe
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(20);
-  doc.text("Restaurant Bill Receipt", 40, 130);
+    // Logo Helper Function
+    const toBase64 = (url: string) =>
+      fetch(url)
+        .then((res) => res.blob())
+        .then(
+          (blob) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            })
+        );
 
-  doc.setFontSize(12);
-  doc.text(`Customer: ${customerName}`, 40, 160);
-  doc.text(`Phone: ${customerPhone}`, 40, 180);
-  doc.text(`Table: ${tableNo}`, 40, 200);
-  doc.text(`Date: ${new Date().toLocaleString()}`, 40, 220);
+    // Header with Logo and Restaurant Name
+    try {
+      const logoBase64 = await toBase64(theme.logoUrl || "/logo.png");
+      if (logoBase64) {
+        // Center the logo
+        const logoSize = 15;
+        const logoX = (pageWidth - logoSize) / 2;
+        doc.addImage(logoBase64, "PNG", logoX, currentY, logoSize, logoSize);
+        currentY += logoSize + 2;
+      }
+    } catch (error) {
+      console.log("Logo loading error:", error);
+    }
 
-  doc.setLineWidth(1);
-  doc.line(40, 235, 550, 235);
+    // Restaurant Name - Centered
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    const restaurantName = theme.restaurantName || "Restaurant";
+    const nameWidth = doc.getTextWidth(restaurantName);
+    doc.text(restaurantName, (pageWidth - nameWidth) / 2, currentY);
+    currentY += 6;
 
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text("Items", 40, 260);
+    // Bill Title
+    doc.setFontSize(8);
+    const billTitle = "RESTAURANT BILL";
+    const titleWidth = doc.getTextWidth(billTitle);
+    doc.text(billTitle, (pageWidth - titleWidth) / 2, currentY);
+    currentY += 6;
 
-  let y = 290;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
+    // Separator Line
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.1);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 4;
 
-  cart.forEach((item) => {
-    // Use simple template string, avoid special characters
-    const line = `${item.title} x${item.quantity} — ₹${item.price * item.quantity}`;
-    doc.text(line, 40, y);
-    y += 20;
-  });
+    // Customer Details - Compact Format
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
 
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Total: ₹${total}`, 40, y + 30);
+    const customerInfo = [
+      `Customer: ${customerName || "N/A"}`,
+      `Phone: ${customerPhone || "N/A"}`,
+      `Table: ${tableNo || "N/A"}`,
+      `${new Date().toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`,
+    ];
 
-  doc.setTextColor(0, 128, 0);
-  doc.setFontSize(28);
-  doc.text("PAID ✔", 400, y + 40);
+    customerInfo.forEach((line) => {
+      doc.text(line, margin, currentY);
+      currentY += 3.5;
+    });
 
-  doc.save(`Bill_Table_${tableNo}.pdf`);
-};
+    currentY += 2;
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 4;
+
+    // Items Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("ITEM", margin, currentY);
+    doc.text("QTY", pageWidth - 30, currentY);
+    doc.text("AMT", pageWidth - 15, currentY);
+    currentY += 4;
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 2;
+
+    // Items List
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+
+    let subtotal = 0;
+    cart.forEach((item) => {
+      const itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+
+      // Item name (truncate if too long)
+      let itemName = item.title || "Unknown Item";
+      if (itemName.length > 25) {
+        itemName = itemName.substring(0, 22) + "...";
+      }
+
+      doc.text(itemName, margin, currentY);
+      currentY += 3;
+
+      // Quantity and amount on same line
+      doc.text(`${item.quantity} x ₹${item.price}`, margin + 2, currentY);
+      doc.text(`₹${itemTotal}`, pageWidth - 15, currentY);
+      currentY += 4;
+    });
+
+    // Separator Line
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 3;
+
+    // Total Section
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text("TOTAL:", margin, currentY);
+    doc.text(`₹${total}`, pageWidth - 15, currentY);
+    currentY += 5;
+
+    // Payment Status
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    const paidText = "✓ PAID";
+    const paidWidth = doc.getTextWidth(paidText);
+    doc.text(paidText, (pageWidth - paidWidth) / 2, currentY);
+    currentY += 8;
+
+    // Footer
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    const footerText = "Thank you for dining with us!";
+    const footerWidth = doc.getTextWidth(footerText);
+    doc.text(footerText, (pageWidth - footerWidth) / 2, currentY);
+
+    // Save with clean filename
+    const cleanRestaurantName = theme.restaurantName?.replace(/[^a-zA-Z0-9]/g, "_") || "Restaurant";
+    const filename = `${cleanRestaurantName}_Bill_Table_${tableNo}.pdf`;
+    doc.save(filename);
+  };
 
 
   // -----------------------------

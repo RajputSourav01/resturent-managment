@@ -45,6 +45,7 @@ const ORDER_STATUSES = [
 export default function OrderStatusPage({ params }: { params: Promise<{ restaurantId: string }> }) {
   const { restaurantId } = use(params);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tableNo = searchParams.get("table");
   const [order, setOrder] = useState<OrderData | null>(null);
   
@@ -126,6 +127,12 @@ export default function OrderStatusPage({ params }: { params: Promise<{ restaura
             (o: any) => o.status !== "served"
           );
 
+          // If no active orders, hide the entire order status page
+          if (activeOrders.length === 0) {
+            setOrder(null);
+            return;
+          }
+
           // ⭐ MAP ONLY ACTIVE ORDERS
           const items: OrderItem[] = activeOrders.map((o: any) => ({
             title: o.title || o.foodName || "Unknown Food",
@@ -144,16 +151,19 @@ export default function OrderStatusPage({ params }: { params: Promise<{ restaura
             0
           );
 
+          // Use the latest active order for status instead of overall latest
+          const latestActiveOrder = activeOrders[0];
+
           setOrder({
             tableNo,
             items,
             totalAmount,
-            status: latest.status || "pending",
-            orderTime: latest.createdAt
-              ? new Date(latest.createdAt.seconds * 1000).toLocaleString()
+            status: latestActiveOrder.status || "pending",
+            orderTime: latestActiveOrder.createdAt
+              ? new Date(latestActiveOrder.createdAt.seconds * 1000).toLocaleString()
               : new Date().toLocaleString(),
-            orderId: latest.id,
-            createdAt: latest.createdAt,
+            orderId: latestActiveOrder.id,
+            createdAt: latestActiveOrder.createdAt,
           });
         } else {
           setOrder(null);
@@ -187,8 +197,6 @@ export default function OrderStatusPage({ params }: { params: Promise<{ restaura
     );
   }
 
-  const router = useRouter();
-
   return (
     
     <main
@@ -208,7 +216,7 @@ export default function OrderStatusPage({ params }: { params: Promise<{ restaura
       className="w-full h-full object-cover"
     />
   </div>
-  <h1 className="text-2xl sm:text-3xl font-[cursive] drop-shadow-lg" style={{ color: theme.colorPicker }}>
+  <h1 className="text-2xl sm:text-3xl font-[cursive] drop-shadow-lg mb-2" style={{ color: theme.colorPicker }}>
     {theme.restaurantName}
   </h1>
 </div>
@@ -226,8 +234,8 @@ export default function OrderStatusPage({ params }: { params: Promise<{ restaura
         </div>
 
         <CardHeader className="text-center space-y-2 max-w-full">
-          <CardTitle className="text-2xl break-words">Order Status</CardTitle>
-          <Badge variant="outline" className="mx-auto break-words">
+          <CardTitle className="text-2xl break-words mt-2"></CardTitle>
+          <Badge variant="outline" className="mx-auto break-words mt-8">
             Order ID: {order.orderId}
           </Badge>
           <p className="text-xs text-muted-foreground break-words">

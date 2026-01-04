@@ -23,6 +23,13 @@ export interface Restaurant {
   email: string;
   description?: string;
   logo?: string;
+  plan?: {
+    id: string;
+    name: string;
+    price: number;
+    duration: string;
+    purchasedAt?: Date;
+  };
   theme?: {
     primaryColor: string;
     secondaryColor: string;
@@ -36,6 +43,9 @@ export interface Restaurant {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  isBlocked?: boolean;
+  blockedAt?: any;
+  blockedReason?: string;
 }
 
 export interface Admin {
@@ -55,7 +65,8 @@ export interface Food {
   description?: string;
   price: number;
   category: string;
-  image?: string;
+  image?: string | string[];
+  images?: string[];
   stock: number;
   isAvailable: boolean;
   createdAt: Date;
@@ -201,6 +212,36 @@ class RestaurantService {
     }
   }
 
+  async checkRestaurantEmailExists(email: string): Promise<boolean> {
+    try {
+      const q = query(
+        collection(db, 'restaurants'),
+        where('email', '==', email),
+        where('isActive', '==', true)
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking restaurant email:', error);
+      return false;
+    }
+  }
+
+  async checkAdminEmailExists(email: string): Promise<boolean> {
+    try {
+      const q = query(
+        collection(db, 'admins'),
+        where('email', '==', email),
+        where('isActive', '==', true)
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking admin email:', error);
+      return false;
+    }
+  }
+
   async updateAdmin(adminId: string, updateData: Partial<Admin>): Promise<boolean> {
     try {
       const docRef = doc(db, 'admins', adminId);
@@ -255,6 +296,66 @@ class RestaurantService {
       return true;
     } catch (error) {
       console.error('Error deleting restaurant:', error);
+      return false;
+    }
+  }
+
+  // Cascade delete restaurant and all related data (for super admin)
+  async cascadeDeleteRestaurant(restaurantId: string): Promise<boolean> {
+    try {
+      // Collections to delete from within restaurant
+      const subCollections = [
+        'orders',
+        'staff', 
+        'foods',
+        'notifications',
+        'themeSettings',
+        'tables',
+        'admins'
+      ];
+
+      // Delete all subcollections
+      for (const collectionName of subCollections) {
+        try {
+          const subCollectionRef = collection(db, "restaurants", restaurantId, collectionName);
+          const snapshot = await getDocs(subCollectionRef);
+          
+          // Delete all documents in subcollection
+          const deletePromises = snapshot.docs.map(docSnapshot => 
+            deleteDoc(doc(db, "restaurants", restaurantId, collectionName, docSnapshot.id))
+          );
+          
+          await Promise.all(deletePromises);
+          console.log(`Deleted ${snapshot.docs.length} documents from ${collectionName}`);
+        } catch (error) {
+          console.warn(`Error deleting ${collectionName}:`, error);
+          // Continue with other collections even if one fails
+        }
+      }
+
+      // Delete admin records associated with this restaurant from main admins collection
+      try {
+        const adminsQuery = query(collection(db, "admins"), where("restaurantId", "==", restaurantId));
+        const adminsSnapshot = await getDocs(adminsQuery);
+        
+        const deleteAdminPromises = adminsSnapshot.docs.map(adminDoc => 
+          deleteDoc(doc(db, "admins", adminDoc.id))
+        );
+        
+        await Promise.all(deleteAdminPromises);
+        console.log(`Deleted ${adminsSnapshot.docs.length} admin records`);
+      } catch (error) {
+        console.warn("Error deleting admin records:", error);
+      }
+
+      // Finally, delete the main restaurant document
+      await deleteDoc(doc(db, "restaurants", restaurantId));
+      
+      console.log("Restaurant and all related data deleted:", restaurantId);
+      return true;
+      
+    } catch (error) {
+      console.error('Error cascade deleting restaurant:', error);
       return false;
     }
   }
